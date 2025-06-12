@@ -17,15 +17,15 @@ class DinoDNS:
         logger.info(f"Server listening on {self.host}:{self.port}")
         while True:
             try:
-                data, addr = self.socket.recvfrom(512)
-                self.handle_request(data, addr)
+                raw, addr = self.socket.recvfrom(512)
+                self.handle_request(raw, addr)
             except KeyboardInterrupt:
                 logger.info("Shutting down.")
                 break
 
-    def handle_request(self, data: bytes, addr: Tuple[str, int]) -> None:
+    def handle_request(self, raw: bytes, addr: Tuple[str, int]) -> None:
         try:
-            header = parse_dns_query(data)
+            header = parse_dns_query(raw)
             logger.info(f"Received request from {addr}: \n{header}")
             # response = build_dns_response(header, question, resolve_domain(question))
         except Exception as e:
