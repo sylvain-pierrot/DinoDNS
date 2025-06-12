@@ -14,22 +14,23 @@ class Flags:
     tc: int
     rd: int
     ra: int
-    zero: int
+    z: int
     rcode: int
 
     def __str__(self) -> str:
         return tabulate(
             [
-                ["QR", self.qr],
-                ["OpCode", hex(self.opcode)],
-                ["AA", hex(self.aa)],
-                ["TC", hex(self.tc)],
-                ["RD", hex(self.rd)],
-                ["RA", hex(self.ra)],
-                ["Z", hex(self.zero)],
-                ["Rcode", hex(self.rcode)],
+                ["QR", self.qr, "Query/Response"],
+                ["OpCode", hex(self.opcode), "Operation Code"],
+                ["AA", hex(self.aa), "Authoritative Answer"],
+                ["TC", hex(self.tc), "Truncated"],
+                ["RD", hex(self.rd), "Recursion Desired"],
+                ["RA", hex(self.ra), "Recursion Available"],
+                ["Z", hex(self.z), "Reserved"],
+                ["Rcode", hex(self.rcode), "Response Code"],
             ],
-            headers=["Field", "Value"],
+            headers=["Field", "Value", "Description"],
+            colalign=("left", "left", "left"),
             tablefmt="pretty",
         )
 
@@ -41,7 +42,7 @@ class Flags:
             | (self.tc & 0x1) << 9
             | (self.rd & 0x1) << 8
             | (self.ra & 0x1) << 7
-            | (self.zero & 0x7) << 4
+            | (self.z & 0x7) << 4
             | (self.rcode & 0xF)
         )
 
@@ -50,30 +51,31 @@ class Flags:
 class DNSHeader:
     id: int
     flags: Flags
-    question_count: int
-    answer_rr_count: int
-    authority_rr_count: int
-    additional_rr_count: int
+    qdcount: int
+    ancount: int
+    nscount: int
+    arcount: int
 
     def __str__(self) -> str:
         return tabulate(
             [
-                ["ID", "", hex(self.id)],
-                ["Flags", "", hex(self.flags.flags_to_int())],
-                ["", "QR", hex(self.flags.qr)],
-                ["", "OpCode", hex(self.flags.opcode)],
-                ["", "AA", hex(self.flags.aa)],
-                ["", "TC", hex(self.flags.tc)],
-                ["", "RD", hex(self.flags.rd)],
-                ["", "RA", hex(self.flags.ra)],
-                ["", "Zero", hex(self.flags.zero)],
-                ["", "Rcode", hex(self.flags.rcode)],
-                ["QDCOUNT", "", hex(self.question_count)],
-                ["ANCOUNT", "", hex(self.answer_rr_count)],
-                ["NSCOUNT", "", hex(self.authority_rr_count)],
-                ["ARCOUNT", "", hex(self.additional_rr_count)],
+                ["ID", "", hex(self.id), "Transaction ID"],
+                ["Flags", "", hex(self.flags.flags_to_int()), ""],
+                ["", "QR", hex(self.flags.qr), "Query/Response"],
+                ["", "OpCode", hex(self.flags.opcode), "Operation Code"],
+                ["", "AA", hex(self.flags.aa), "Authoritative Answer"],
+                ["", "TC", hex(self.flags.tc), "Truncated"],
+                ["", "RD", hex(self.flags.rd), "Recursion Desired"],
+                ["", "RA", hex(self.flags.ra), "Recursion Available"],
+                ["", "Z", hex(self.flags.z), "Reserved"],
+                ["", "Rcode", hex(self.flags.rcode), "Response Code"],
+                ["QDCOUNT", "", hex(self.qdcount), "Number of Questions"],
+                ["ANCOUNT", "", hex(self.ancount), "Number of Answer RRs"],
+                ["NSCOUNT", "", hex(self.nscount), "Number of Authority RRs"],
+                ["ARCOUNT", "", hex(self.arcount), "Number of Additional RRs"],
             ],
-            headers=["Field", "Sub-field", "Value"],
+            headers=["Field", "Sub-field", "Value", "Description"],
+            colalign=("left", "left", "left", "left"),
             tablefmt="pretty",
         )
 
@@ -109,17 +111,18 @@ def parse_dns_query(data: bytes) -> DNSHeader:
             tc=(flags_int >> 9) & 0x1,
             rd=(flags_int >> 8) & 0x1,
             ra=(flags_int >> 7) & 0x1,
-            zero=(flags_int >> 4) & 0x7,
+            z=(flags_int >> 4) & 0x7,
             rcode=flags_int & 0xF,
         ),
-        question_count=int.from_bytes(raw_header[4:6]),
-        answer_rr_count=int.from_bytes(raw_header[6:8]),
-        authority_rr_count=int.from_bytes(raw_header[8:10]),
-        additional_rr_count=int.from_bytes(raw_header[10:12]),
+        qdcount=int.from_bytes(raw_header[4:6]),
+        ancount=int.from_bytes(raw_header[6:8]),
+        nscount=int.from_bytes(raw_header[8:10]),
+        arcount=int.from_bytes(raw_header[10:12]),
     )
 
     logger.info(f"Total data: {hex(int.from_bytes(data))}")
-    for i in range(header.question_count):
+    for i in range(header.qdcount):
+        raw_question = data[12:18]
         question = hex(int.from_bytes(data[12:18]))
         logger.info(f"Parsed question {i + 1}: {question}")
 
