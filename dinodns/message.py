@@ -29,3 +29,6 @@ class DNSMessage:
     response: List[DNSResponse]
     authority: List[DNSAuthority]
     additional: List[DNSAdditional]
+
+    def __str__(self) -> str:
+        return self.header.__str__()

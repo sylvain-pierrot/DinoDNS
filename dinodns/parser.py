@@ -6,7 +6,7 @@ import logging
 logger = logging.getLogger(__name__)
 
 
-def parse_dns_query(raw: bytes) -> DNSHeader:
+def parse_dns_query(raw: bytes) -> DNSMessage:
     if len(raw) > 512:
         raise ValueError("DNS message exceeds maximum length of 512 bytes")
 
@@ -26,4 +26,4 @@ def parse_dns_query(raw: bytes) -> DNSHeader:
         offset += question.byte_length()
         message.question.append(question)
 
-    return header
+    return message
