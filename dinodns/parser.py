@@ -1,18 +1,11 @@
 from dataclasses import dataclass
 from typing import List
+from tabulate import tabulate
 import logging
 
 logger = logging.getLogger(__name__)
 
 
-# bit 15 (QR):        0   → query
-# bits 14–11 (OpCode):0000 → standard query
-# bit 10 (AA):        0
-# bit 9 (TC):         0
-# bit 8 (RD):         1   → recursion desired
-# bit 7 (RA):         0
-# bits 6–4 (Z):       000
-# bits 3–0 (RCODE):   0000
 @dataclass
 class Flags:
     qr: int
@@ -25,21 +18,36 @@ class Flags:
     rcode: int
 
     def __str__(self) -> str:
+        return tabulate(
+            [
+                ["QR", self.qr],
+                ["OpCode", hex(self.opcode)],
+                ["AA", hex(self.aa)],
+                ["TC", hex(self.tc)],
+                ["RD", hex(self.rd)],
+                ["RA", hex(self.ra)],
+                ["Z", hex(self.zero)],
+                ["Rcode", hex(self.rcode)],
+            ],
+            headers=["Field", "Value"],
+            tablefmt="pretty",
+        )
+
+    def flags_to_int(self) -> int:
         return (
-            f"Flags:\n"
-            f"  QR: {self.qr}\n"
-            f"  OpCode: {self.opcode}\n"
-            f"  AA: {self.aa}\n"
-            f"  TC: {self.tc}\n"
-            f"  RD: {self.rd}\n"
-            f"  RA: {self.ra}\n"
-            f"  Zero: {self.zero}\n"
-            f"  Rcode: {self.rcode}"
+            (self.qr & 0x1) << 15
+            | (self.opcode & 0xF) << 11
+            | (self.aa & 0x1) << 10
+            | (self.tc & 0x1) << 9
+            | (self.rd & 0x1) << 8
+            | (self.ra & 0x1) << 7
+            | (self.zero & 0x7) << 4
+            | (self.rcode & 0xF)
         )
 
 
 @dataclass
-class Header:
+class DNSHeader:
     id: int
     flags: Flags
     question_count: int
@@ -48,37 +56,51 @@ class Header:
     additional_rr_count: int
 
     def __str__(self) -> str:
-        flags_str = str(self.flags)
-        flags_indented = "\n".join("    " + line for line in flags_str.splitlines()[1:])
-
-        return (
-            f"Header:\n"
-            f"  Transaction ID: {self.id:#06x}\n"
-            f"  Flags:\n{flags_indented}\n"
-            f"  Questions: {self.question_count}\n"
-            f"  Answer RRs: {self.answer_rr_count}\n"
-            f"  Authority RRs: {self.authority_rr_count}\n"
-            f"  Additional RRs: {self.additional_rr_count}"
+        return tabulate(
+            [
+                ["ID", "", hex(self.id)],
+                ["Flags", "", hex(self.flags.flags_to_int())],
+                ["", "QR", hex(self.flags.qr)],
+                ["", "OpCode", hex(self.flags.opcode)],
+                ["", "AA", hex(self.flags.aa)],
+                ["", "TC", hex(self.flags.tc)],
+                ["", "RD", hex(self.flags.rd)],
+                ["", "RA", hex(self.flags.ra)],
+                ["", "Zero", hex(self.flags.zero)],
+                ["", "Rcode", hex(self.flags.rcode)],
+                ["QDCOUNT", "", hex(self.question_count)],
+                ["ANCOUNT", "", hex(self.answer_rr_count)],
+                ["NSCOUNT", "", hex(self.authority_rr_count)],
+                ["ARCOUNT", "", hex(self.additional_rr_count)],
+            ],
+            headers=["Field", "Sub-field", "Value"],
+            tablefmt="pretty",
         )
 
 
 @dataclass
+class DNSQuestion:
+    qname: int
+    qtype: int
+    qclass: int
+
+
+@dataclass
 class DNSMessage:
-    header: Header
-    question: List[int]
+    header: DNSHeader
+    question: List[DNSQuestion]
     response: List[int]
     authority: List[int]
     additional: List[int]
 
 
-def parse_dns_query(data: bytes) -> Header:
+def parse_dns_query(data: bytes) -> DNSHeader:
     if len(data) > 512:
         raise ValueError("DNS message exceeds maximum length of 512 bytes")
 
     raw_header = data[:12]
     flags_int = int.from_bytes(raw_header[2:4], byteorder="big")
-    logger.info(f"Raw DNS header: {raw_header.hex()}")
-    header = Header(
+    header = DNSHeader(
         id=int.from_bytes(raw_header[:2]),
         flags=Flags(
             qr=(flags_int >> 15) & 0x1,
@@ -96,6 +118,9 @@ def parse_dns_query(data: bytes) -> Header:
         additional_rr_count=int.from_bytes(raw_header[10:12]),
     )
 
-    logger.info(f"Parsed DNS header: {header}")
+    logger.info(f"Total data: {hex(int.from_bytes(data))}")
+    for i in range(header.question_count):
+        question = hex(int.from_bytes(data[12:18]))
+        logger.info(f"Parsed question {i + 1}: {question}")
 
     return header
