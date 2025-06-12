@@ -1,6 +1,6 @@
-from question import DNSQuestion
-from message import DNSMessage
-from header import DNSHeader
+from dinodns.core.question import DNSQuestion
+from dinodns.core.message import DNSMessage
+from dinodns.core.header import DNSHeader
 import logging
 
 logger = logging.getLogger(__name__)
@@ -15,15 +15,15 @@ def parse_dns_query(raw: bytes) -> DNSMessage:
     header = DNSHeader(raw[:offset])
     message = DNSMessage(
         header=header,
-        question=[],
-        response=[],
-        authority=[],
+        questions=[],
+        answers=[],
+        authorities=[],
         additional=[],
     )
 
     for _ in range(header.qdcount):
         question = DNSQuestion(raw[offset:])
         offset += question.byte_length()
-        message.question.append(question)
+        message.questions.append(question)
 
     return message

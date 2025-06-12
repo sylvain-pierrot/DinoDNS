@@ -1,4 +1,5 @@
-from parser import parse_dns_query
+from dinodns.core.answer import DNSAnswer
+from dinodns.parser import parse_dns_query
 from socket import AF_INET, SOCK_DGRAM, socket
 from typing import Tuple
 import logging
@@ -25,12 +26,27 @@ class DinoDNS:
 
     def handle_request(self, raw: bytes, addr: Tuple[str, int]) -> None:
         try:
-            message = parse_dns_query(raw)
-            logger.info(f"Received request from {addr}: \n{message}")
+            query = parse_dns_query(raw)
+            logger.info(f"Received request from {addr}: \n{query}")
             logger.info(
-                f"DNS Query for {message.question[0].get_label_name()} of type {message.question[0].get_type().name} at {message.question[0].get_class().name}"
+                f"DNS query for {query.questions[0].get_label_name()} of type {query.questions[0].get_type().name} at {query.questions[0].get_class().name}"
             )
-            # response = build_dns_response(header, question, resolve_domain(question))
+
+            query.header.flags.qr = 1
+            query.header.flags.ra = 1
+
+            answer = DNSAnswer(
+                query.questions[0].qname,
+                query.questions[0].qtype,
+                query.questions[0].qclass,
+                30,
+                bytes([127, 0, 0, 1]),
+            )
+            query.answers.append(answer)
+            query.header.ancount += 1
+            logger.info(f"Sending response to {addr}: \n{query.to_bytes()}")
+            self.socket.sendto(query.to_bytes(), addr)
+
         except Exception as e:
             print(f"Error parsing/handling request from {addr}: {e}")
             return

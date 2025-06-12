@@ -36,10 +36,9 @@ class DNSQuestion:
         self.qname = raw_from_question[:null_label_index]
         self.qtype = raw_from_question[null_label_index : null_label_index + 2]
         self.qclass = raw_from_question[null_label_index + 2 : null_label_index + 4]
-        # self.qclass = 1  # Defaulting to IN (Internet) class
 
     def byte_length(self) -> int:
-        return len(self.qname) + 2 + 2
+        return len(self.qname) + len(self.qtype) + len(self.qclass)
 
     def get_type(self) -> QType:
         try:
@@ -70,3 +69,6 @@ class DNSQuestion:
             offset += label_length
 
         return ".".join(labels) + "."
+
+    def to_bytes(self) -> bytes:
+        return self.qname + self.qtype + self.qclass

@@ -1,4 +1,4 @@
-from server import DinoDNS
+from dinodns.server import DinoDNS
 import sys
 import logging
 

@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 from tabulate import tabulate
-from utils import format_bits
+from dinodns.utils import format_bits
 import logging
 
 
@@ -46,6 +46,9 @@ class Flags:
             | (self.z & 0x7) << 4
             | (self.rcode & 0xF)
         )
+
+    def to_bytes(self) -> bytes:
+        return self.to_int().to_bytes(2, "big")
 
 
 @dataclass
@@ -99,4 +102,14 @@ class DNSHeader:
             headers=["Field", "Sub-field", "Value", "Description"],
             colalign=("left", "left", "left", "left"),
             tablefmt="pretty",
+        )
+
+    def to_bytes(self) -> bytes:
+        return (
+            self.id.to_bytes(2, "big")
+            + self.flags.to_bytes()
+            + self.qdcount.to_bytes(2, "big")
+            + self.ancount.to_bytes(2, "big")
+            + self.nscount.to_bytes(2, "big")
+            + self.arcount.to_bytes(2, "big")
         )
