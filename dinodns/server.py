@@ -2,7 +2,9 @@ from parser import parse_dns_query
 from socket import AF_INET, SOCK_DGRAM, socket
 from typing import Tuple
 import logging
+
 logger = logging.getLogger(__name__)
+
 
 class DinoDNS:
     def __init__(self, host: str = "0.0.0.0", port: int = 53) -> None:
@@ -20,7 +22,7 @@ class DinoDNS:
             except KeyboardInterrupt:
                 logger.info("[DNS] Shutting down.")
                 break
-    
+
     def handle_request(self, data: bytes, addr: Tuple[str, int]) -> None:
         try:
             header = parse_dns_query(data)
