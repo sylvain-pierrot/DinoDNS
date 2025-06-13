@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 from typing import List, Optional
-from dacite import Config, DaciteError, from_dict
+from dacite import Config, from_dict
 import logging
 
 logger = logging.getLogger(__name__)

@@ -20,10 +20,11 @@ logger = logging.getLogger(__name__)
 @click.option(
     "--port", "-p", type=click.INT, default=53, help="Port to listen on (default: 53)"
 )
-def main(dinofile: click.Path, host: str, port: int) -> None:
+@click.option("--no-debug", is_flag=True, default=False, help="Enable debug mode")
+def main(dinofile: click.Path, host: str, port: int, no_debug: bool) -> None:
     logging.basicConfig(
         stream=sys.stdout,
-        level=logging.INFO,
+        level=logging.INFO if no_debug else logging.DEBUG,
         format="[%(asctime)s] [%(levelname)s] %(name)s: %(message)s",
         datefmt="%Y-%m-%d %H:%M:%S",
     )
@@ -32,8 +33,7 @@ def main(dinofile: click.Path, host: str, port: int) -> None:
         try:
             with click.open_file(click.format_filename(dinofile), "rb") as f:
                 content = tomllib.load(f)
-                dnsconfig = DnsConfig.from_dict(content)
-                logger.info(dnsconfig)
+                _dnsconfig = DnsConfig.from_dict(content)
         except Exception as e:
             logger.error(f"Invalid Dinofile format: {e}")
             return

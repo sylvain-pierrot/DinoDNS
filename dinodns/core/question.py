@@ -30,12 +30,15 @@ class DNSQuestion:
     qtype: bytes
     qclass: bytes
 
-    def __init__(self, raw_from_question: bytes):
-        null_label_index = raw_from_question.index(b"\x00") + 1
+    @classmethod
+    def from_bytes(cls, data: bytes) -> "DNSQuestion":
+        null_label_index = data.index(b"\x00") + 1
 
-        self.qname = raw_from_question[:null_label_index]
-        self.qtype = raw_from_question[null_label_index : null_label_index + 2]
-        self.qclass = raw_from_question[null_label_index + 2 : null_label_index + 4]
+        qname = data[:null_label_index]
+        qtype = data[null_label_index : null_label_index + 2]
+        qclass = data[null_label_index + 2 : null_label_index + 4]
+
+        return cls(qname=qname, qtype=qtype, qclass=qclass)
 
     def byte_length(self) -> int:
         return len(self.qname) + len(self.qtype) + len(self.qclass)

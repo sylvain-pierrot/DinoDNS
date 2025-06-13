@@ -60,27 +60,6 @@ class DNSHeader:
     nscount: int
     arcount: int
 
-    def __init__(self, raw: bytes):
-        if len(raw) != 12:
-            raise ValueError("Expected exactly 12 bytes")
-
-        flags = int.from_bytes(raw[2:4], "big")
-        self.id = int.from_bytes(raw[0:2])
-        self.flags = Flags(
-            qr=(flags >> 15) & 0x1,
-            opcode=(flags >> 11) & 0xF,
-            aa=(flags >> 10) & 0x1,
-            tc=(flags >> 9) & 0x1,
-            rd=(flags >> 8) & 0x1,
-            ra=(flags >> 7) & 0x1,
-            z=(flags >> 4) & 0x7,
-            rcode=flags & 0xF,
-        )
-        self.qdcount = int.from_bytes(raw[4:6])
-        self.ancount = int.from_bytes(raw[6:8])
-        self.nscount = int.from_bytes(raw[8:10])
-        self.arcount = int.from_bytes(raw[10:12])
-
     def __str__(self) -> str:
         return tabulate(
             [
@@ -102,6 +81,30 @@ class DNSHeader:
             headers=["Field", "Sub-field", "Value", "Description"],
             colalign=("left", "left", "left", "left"),
             tablefmt="pretty",
+        )
+
+    @classmethod
+    def from_bytes(cls, data: bytes) -> "DNSHeader":
+        if len(data) != 12:
+            raise ValueError("Expected exactly 12 bytes for DNS header")
+
+        flags = int.from_bytes(data[2:4], "big")
+        return cls(
+            id=int.from_bytes(data[0:2], "big"),
+            flags=Flags(
+                qr=(flags >> 15) & 0x1,
+                opcode=(flags >> 11) & 0xF,
+                aa=(flags >> 10) & 0x1,
+                tc=(flags >> 9) & 0x1,
+                rd=(flags >> 8) & 0x1,
+                ra=(flags >> 7) & 0x1,
+                z=(flags >> 4) & 0x7,
+                rcode=flags & 0xF,
+            ),
+            qdcount=int.from_bytes(data[4:6], "big"),
+            ancount=int.from_bytes(data[6:8], "big"),
+            nscount=int.from_bytes(data[8:10], "big"),
+            arcount=int.from_bytes(data[10:12], "big"),
         )
 
     def to_bytes(self) -> bytes:

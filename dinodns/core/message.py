@@ -29,10 +29,37 @@ class DNSMessage:
     def __str__(self) -> str:
         return self.header.__str__()
 
+    @classmethod
+    def from_bytes(cls, data: bytes) -> "DNSMessage":
+        if len(data) > 512:
+            raise ValueError("DNS message exceeds maximum length of 512 bytes")
+
+        offset = 12
+        header = DNSHeader.from_bytes(data[:offset])
+        questions = []
+        for _ in range(header.qdcount):
+            question = DNSQuestion.from_bytes(data[offset:])
+            offset += question.byte_length()
+            questions.append(question)
+        answers = []
+        for _ in range(header.ancount):
+            answer = DNSAnswer.from_bytes(data[offset:])
+            offset += answer.byte_length()
+            answers.append(answer)
+        authorities = []
+
+        return cls(
+            header=header,
+            questions=questions,
+            answers=answers,
+            authorities=authorities,
+            additional=[],
+        )
+
     def to_bytes(self) -> bytes:
-        raw = self.header.to_bytes()
+        data = self.header.to_bytes()
         for q in self.questions:
-            raw += q.to_bytes()
+            data += q.to_bytes()
         for a in self.answers:
-            raw += a.to_bytes()
-        return raw
+            data += a.to_bytes()
+        return data
