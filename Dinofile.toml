@@ -1,0 +1,14 @@
+[[zones]]
+zone = "."
+forward = ["1.1.1.1"]
+
+[[zones]]
+zone = "jurassic.org"
+origin = "jurassic.org."
+ttl = 3600
+records = [
+    { name = "www", type = "A", value = "192.168.1.1" },
+    { name = "mail", type = "MX", value = "mail.jurassic.org." },
+    { name = "ftp", type = "CNAME", value = "www.jurassic.org." },
+    { name = "ns", type = "NS", value = "ns1.jurassic.org." },
+]

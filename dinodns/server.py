@@ -8,7 +8,7 @@ logger = logging.getLogger(__name__)
 
 
 class DinoDNS:
-    def __init__(self, host: str = "0.0.0.0", port: int = 53) -> None:
+    def __init__(self, host: str, port: int):
         self.host = host
         self.port = port
         self.socket = socket(AF_INET, SOCK_DGRAM)
