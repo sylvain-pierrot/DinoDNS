@@ -95,7 +95,11 @@ class Catalog:
                     if record.domain_name == "@"
                     else record.domain_name.lower().rstrip(".")
                 )
-                if record_name == qname:
+                if (
+                    record_name == qname
+                    and question.qtype.name == record.type
+                    and question.qclass.name == record.class_
+                ):
                     return record
 
         return None

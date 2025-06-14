@@ -1,10 +1,12 @@
 from socket import AF_INET, SOCK_DGRAM, socket
 from typing import List
-from dinodns.core.answer import DNSAnswer
+from dinodns.core.resource_record import DNSResourceRecord
 from dinodns.core.header import OpCode, RCode
 from dinodns.core.message import DNSMessage
 from dinodns.catalog import Catalog
 import logging
+
+from dinodns.resolver import try_resolve_question
 
 logger = logging.getLogger(__name__)
 
@@ -50,10 +52,10 @@ class DinoDNS:
                 return query
 
             if query.header.flags.opcode == OpCode.QUERY:
-                answers: List[DNSAnswer] = []
+                answers: List[DNSResourceRecord] = []
 
                 for _, question in enumerate(query.questions):
-                    answer = DNSAnswer.try_answer(self.catalog, question)
+                    answer = try_resolve_question(self.catalog, question)
                     if answer:
                         answers.append(answer)
 

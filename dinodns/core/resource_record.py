@@ -1,13 +1,55 @@
 from abc import ABC, abstractmethod
+from enum import Enum
 from ipaddress import IPv4Address
-from typing import Optional, Type
-from dinodns.catalog import ARecord, Catalog
-from dinodns.core.question import DNSQuestion, QClass, QType
 from dataclasses import dataclass
 from dinodns.utils import decode_domain_name, encode_domain_name
 import logging
 
 logger = logging.getLogger(__name__)
+
+
+class Type(Enum):
+    UNKNOWN = -1
+    A = 1
+    NS = 2
+    MD = 3
+    MF = 4
+    CNAME = 5
+    SOA = 6
+    MB = 7
+    MG = 8
+    MR = 9
+    NULL = 10
+    WKS = 11
+    PTR = 12
+    HINFO = 13
+    MINFO = 14
+    MX = 15
+    TXT = 16
+    AAAA = 28
+    SRV = 33
+
+    @classmethod
+    def _missing_(cls, value):
+        obj = object.__new__(cls)
+        obj._name_ = "UNKNOWN"
+        obj._value_ = value
+        return obj
+
+
+class Class(Enum):
+    UNKNOWN = -1
+    IN = 1  # Internet class
+    CS = 2  # CSNET class (obsolete)
+    CH = 3  # CHAOS class (obsolete)
+    HS = 4  # Hesiod class (obsolete)
+
+    @classmethod
+    def _missing_(cls, value):
+        obj = object.__new__(cls)
+        obj._name_ = "UNKNOWN"
+        obj._value_ = value
+        return obj
 
 
 class RData(ABC):
@@ -46,13 +88,13 @@ class RDataCNAME(RData):
 
 
 class RDataFactory:
-    _registry: dict[QType, RData] = {
-        QType.A: RDataA,
-        QType.CNAME: RDataCNAME,
+    _registry: dict[Type, RData] = {
+        Type.A: RDataA,
+        Type.CNAME: RDataCNAME,
     }
 
     @staticmethod
-    def from_bytes(qtype: QType, data: bytes) -> RData:
+    def from_bytes(qtype: Type, data: bytes) -> RData:
         cls = RDataFactory._registry.get(qtype)
         if cls is None:
             raise NotImplementedError(f"Unsupported QType: {qtype}")
@@ -60,10 +102,10 @@ class RDataFactory:
 
 
 @dataclass
-class DNSAnswer:
+class DNSResourceRecord:
     name: str
-    type: QType
-    class_: QClass
+    type: Type
+    class_: Class
     ttl: int
     rdata: RData
 
@@ -100,7 +142,7 @@ class DNSAnswer:
         )
 
     @classmethod
-    def from_bytes(cls, data: bytes) -> "DNSAnswer":
+    def from_bytes(cls, data: bytes) -> "DNSResourceRecord":
         offset = 0
         labels = []
         while data[offset] != 0:
@@ -111,8 +153,8 @@ class DNSAnswer:
         name = ".".join(labels) + "."
         offset += 1
 
-        type = QType(int.from_bytes(data[offset : offset + 2], "big"))
-        class_ = QClass(int.from_bytes(data[offset + 2 : offset + 4], "big"))
+        type = Type(int.from_bytes(data[offset : offset + 2], "big"))
+        class_ = Class(int.from_bytes(data[offset + 2 : offset + 4], "big"))
         ttl = int.from_bytes(data[offset + 4 : offset + 8], "big")
         rdlength = int.from_bytes(data[offset + 8 : offset + 10], "big")
         rdata_bytes = data[offset + 10 : offset + 10 + rdlength]
@@ -139,26 +181,3 @@ class DNSAnswer:
 
     def byte_length(self) -> int:
         return len(self.to_bytes())
-
-    @classmethod
-    def try_answer(
-        clc, catalog: Catalog, question: DNSQuestion
-    ) -> "Optional[DNSAnswer]":
-        record = catalog.try_lookup_record(question)
-
-        if record is None:
-            logger.warning(f'msg="No record found for {question.qname}"')
-            return None
-
-        if isinstance(record, ARecord):
-            rdata = RDataA(address=IPv4Address(record.host_address))
-        else:
-            rdata = RDataCNAME(cname=record.cname)
-
-        return DNSAnswer(
-            name=question.qname,
-            type=question.qtype,
-            class_=question.qclass,
-            ttl=record.ttl,
-            rdata=rdata,
-        )

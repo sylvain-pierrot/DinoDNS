@@ -23,7 +23,10 @@
   - [Prerequisites](#prerequisites)
   - [Installation](#installation)
   - [Usage](#usage)
-  - [Testing](#testing)
+  - [Query Examples](#query-examples)
+    - [**A** Record Query:](#a-record-query)
+    - [Known **CNAME** Record:](#known-cname-record)
+    - [Unknown **CNAME** Record:](#unknown-cname-record)
 - [`Catalog.toml` Example](#catalogtoml-example)
 
 ## Overview
@@ -75,12 +78,54 @@ dinodns Catalog.toml
 uv run -m dinodns.main Catalog.toml
 ```
 
-### Testing
+### Query Examples
 
-Once DinoDNS is runnning, Run the following command:
+You can interact with DinoDNS using _standard_ DNS tools like `nslookup`:
+
+#### **A** Record Query:
 
 ```bash
 nslookup jurassic.org. 127.0.0.1
+```
+
+Output:
+
+```bash
+Server:         127.0.0.1
+Address:        127.0.0.1#53
+
+Name:   jurassic.org
+Address: 192.168.1.1
+```
+
+#### Known **CNAME** Record:
+
+```bash
+nslookup -type=CNAME jurassic.org. 127.0.0.1
+```
+
+Output:
+
+```bash
+Server:         127.0.0.1
+Address:        127.0.0.1#53
+
+jurassic.org    canonical name = www.jurassic.org.
+```
+
+#### Unknown **CNAME** Record:
+
+```bash
+nslookup -type=CNAME www.example.com 127.0.0.1
+```
+
+Output:
+
+```bash
+Server:         127.0.0.1
+Address:        127.0.0.1#53
+
+** server can't find www.example.com: NXDOMAIN
 ```
 
 ---

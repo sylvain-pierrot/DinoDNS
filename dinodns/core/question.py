@@ -2,6 +2,7 @@ from dataclasses import dataclass
 from enum import Enum
 import logging
 
+
 logger = logging.getLogger(__name__)
 
 
@@ -25,6 +26,10 @@ class QType(Enum):
     TXT = 16
     AAAA = 28
     SRV = 33
+    AXFR = 252
+    MAILB = 253
+    MAILA = 254
+    ANY = 255
 
     @classmethod
     def _missing_(cls, value):
@@ -35,10 +40,19 @@ class QType(Enum):
 
 
 class QClass(Enum):
+    UNKNOWN = -1
     IN = 1  # Internet class
     CS = 2  # CSNET class (obsolete)
     CH = 3  # CHAOS class (obsolete)
     HS = 4  # Hesiod class (obsolete)
+    ANY = 255
+
+    @classmethod
+    def _missing_(cls, value):
+        obj = object.__new__(cls)
+        obj._name_ = "UNKNOWN"
+        obj._value_ = value
+        return obj
 
 
 @dataclass

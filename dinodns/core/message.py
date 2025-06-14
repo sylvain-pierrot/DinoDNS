@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 from typing import List
-from dinodns.core.answer import DNSAnswer
+from dinodns.core.resource_record import DNSResourceRecord
 from dinodns.core.header import DNSHeader
 from dinodns.core.question import DNSQuestion
 import logging
@@ -9,22 +9,12 @@ logger = logging.getLogger(__name__)
 
 
 @dataclass
-class DNSAuthority:
-    pass
-
-
-@dataclass
-class DNSAdditional:
-    pass
-
-
-@dataclass
 class DNSMessage:
     header: DNSHeader
     questions: List[DNSQuestion]
-    answers: List[DNSAnswer]
-    authorities: List[DNSAuthority]
-    additional: List[DNSAdditional]
+    answers: List[DNSResourceRecord]
+    authorities: List[DNSResourceRecord]
+    additional: List[DNSResourceRecord]
 
     def __str__(self) -> str:
         questions = " ".join(
@@ -50,7 +40,7 @@ class DNSMessage:
             questions.append(question)
         answers = []
         for _ in range(header.ancount):
-            answer = DNSAnswer.from_bytes(data[offset:])
+            answer = DNSResourceRecord.from_bytes(data[offset:])
             offset += answer.byte_length()
             answers.append(answer)
 
