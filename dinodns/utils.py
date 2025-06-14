@@ -13,3 +13,22 @@ def convert_keys(obj):
         return [convert_keys(i) for i in obj]
     else:
         return obj
+
+
+def encode_domain_name(domain: str) -> bytes:
+    parts = domain.rstrip(".").split(".")
+    return (
+        b"".join(len(label).to_bytes(1, "big") + label.encode() for label in parts)
+        + b"\x00"
+    )
+
+
+def decode_domain_name(data: bytes) -> str:
+    labels = []
+    offset = 0
+    while data[offset] != 0:
+        length = data[offset]
+        offset += 1
+        labels.append(data[offset : offset + length].decode())
+        offset += length
+    return ".".join(labels) + "."

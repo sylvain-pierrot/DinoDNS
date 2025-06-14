@@ -27,7 +27,14 @@ class DNSMessage:
     additional: List[DNSAdditional]
 
     def __str__(self) -> str:
-        return self.header.__str__()
+        questions = " ".join(
+            self.questions[i].to_logfmt(i) for i in range(self.header.qdcount)
+        )
+        answers = " ".join(
+            self.answers[i].to_logfmt(i) for i in range(self.header.ancount)
+        )
+
+        return f"kind=DNSMessage {self.header} {questions} {answers}"
 
     @classmethod
     def from_bytes(cls, data: bytes) -> "DNSMessage":

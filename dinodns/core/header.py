@@ -15,6 +15,19 @@ class OpCode(Enum):
     STATUS = 2
 
 
+class RCode(Enum):
+    NOERROR = 0
+    FORMERR = 1
+    SERVFAIL = 2
+    NXDOMAIN = 3
+    NOTIMP = 4
+    REFUSED = 5
+    YXDOMAIN = 6
+    XRRSET = 7
+    NOTAUTH = 8
+    NOTZONE = 9
+
+
 @dataclass
 class Flags:
     qr: int
@@ -24,9 +37,21 @@ class Flags:
     rd: int
     ra: int
     z: int
-    rcode: int
+    rcode: RCode
 
     def __str__(self) -> str:
+        return (
+            f"qr={self.qr} "
+            f"opcode={self.opcode.name} "
+            f"aa={self.aa} "
+            f"tc={self.tc} "
+            f"rd={self.rd} "
+            f"ra={self.ra} "
+            f"z={self.z} "
+            f"rcode={self.rcode.name}"
+        )
+
+    def tabulate(self) -> str:
         return tabulate(
             [
                 ["QR", self.qr, "Query/Response"],
@@ -36,7 +61,7 @@ class Flags:
                 ["RD", self.rd, "Recursion Desired"],
                 ["RA", self.ra, "Recursion Available"],
                 ["Z", format_bits(self.z, 3), "Reserved"],
-                ["Rcode", format_bits(self.rcode, 4), "Response Code"],
+                ["Rcode", format_bits(self.rcode.value, 4), "Response Code"],
             ],
             headers=["Field", "Value", "Description"],
             colalign=("left", "left", "left"),
@@ -52,7 +77,7 @@ class Flags:
             | (self.rd & 0x1) << 8
             | (self.ra & 0x1) << 7
             | (self.z & 0x7) << 4
-            | (self.rcode & 0xF)
+            | (self.rcode.value & 0xF)
         )
 
     def to_bytes(self) -> bytes:
@@ -71,6 +96,16 @@ class DNSHeader:
     HEADER_SIZE: ClassVar[int] = 12
 
     def __str__(self) -> str:
+        return (
+            f"id={self.id} "
+            f"{self.flags} "
+            f"qdcount={self.qdcount} "
+            f"ancount={self.ancount} "
+            f"nscount={self.nscount} "
+            f"arcount={self.arcount}"
+        )
+
+    def tabulate(self) -> str:
         return tabulate(
             [
                 ["ID", "", self.id.to_bytes(2, "big"), "Transaction ID"],
@@ -87,7 +122,7 @@ class DNSHeader:
                 ["", "RD", self.flags.rd, "Recursion Desired"],
                 ["", "RA", self.flags.ra, "Recursion Available"],
                 ["", "Z", format_bits(self.flags.z, 3), "Reserved"],
-                ["", "Rcode", format_bits(self.flags.rcode, 4), "Response Code"],
+                ["", "Rcode", format_bits(self.flags.rcode.value, 4), "Response Code"],
                 ["QDCOUNT", "", self.qdcount, "Number of Questions"],
                 ["ANCOUNT", "", self.ancount, "Number of Answer RRs"],
                 ["NSCOUNT", "", self.nscount, "Number of Authority RRs"],
@@ -116,7 +151,7 @@ class DNSHeader:
                 rd=(flags >> 8) & 0x1,
                 ra=(flags >> 7) & 0x1,
                 z=(flags >> 4) & 0x7,
-                rcode=flags & 0xF,
+                rcode=RCode(flags & 0xF),
             ),
             qdcount=int.from_bytes(data[4:6], "big"),
             ancount=int.from_bytes(data[6:8], "big"),

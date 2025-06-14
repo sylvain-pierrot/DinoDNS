@@ -6,15 +6,32 @@ logger = logging.getLogger(__name__)
 
 
 class QType(Enum):
+    UNKNOWN = -1
     A = 1
     NS = 2
+    MD = 3
+    MF = 4
     CNAME = 5
     SOA = 6
+    MB = 7
+    MG = 8
+    MR = 9
+    NULL = 10
+    WKS = 11
     PTR = 12
+    HINFO = 13
+    MINFO = 14
     MX = 15
     TXT = 16
     AAAA = 28
     SRV = 33
+
+    @classmethod
+    def _missing_(cls, value):
+        obj = object.__new__(cls)
+        obj._name_ = "UNKNOWN"
+        obj._value_ = value
+        return obj
 
 
 class QClass(Enum):
@@ -26,52 +43,46 @@ class QClass(Enum):
 
 @dataclass
 class DNSQuestion:
-    qname: bytes
-    qtype: bytes
-    qclass: bytes
+    qname: str
+    qtype: QType
+    qclass: QClass
+
+    def __str__(self) -> str:
+        return f"qname={self.qname} qtype={self.qtype.name} qclass={self.qclass.name}"
+
+    def to_logfmt(self, index: int) -> str:
+        return (
+            f"question.{index}.qname={self.qname} "
+            f"question.{index}.qtype={self.qtype.name} "
+            f"question.{index}.qclass={self.qclass.name}"
+        )
 
     @classmethod
     def from_bytes(cls, data: bytes) -> "DNSQuestion":
-        null_label_index = data.index(b"\x00") + 1
-
-        qname = data[:null_label_index]
-        qtype = data[null_label_index : null_label_index + 2]
-        qclass = data[null_label_index + 2 : null_label_index + 4]
-
+        offset = 0
+        labels = []
+        while data[offset] != 0:
+            length = data[offset]
+            offset += 1
+            labels.append(data[offset : offset + length].decode())
+            offset += length
+        offset += 1  # skip null byte
+        qname = ".".join(labels) + "."
+        qtype = QType(int.from_bytes(data[offset : offset + 2], "big"))
+        qclass = QClass(int.from_bytes(data[offset + 2 : offset + 4], "big"))
         return cls(qname=qname, qtype=qtype, qclass=qclass)
 
-    def byte_length(self) -> int:
-        return len(self.qname) + len(self.qtype) + len(self.qclass)
-
-    def get_type(self) -> QType:
-        try:
-            return QType(int.from_bytes(self.qtype, "big"))
-        except ValueError:
-            logger.error(f"Unknown record type: {self.qtype}")
-            return None
-
-    def get_class(self) -> QClass:
-        try:
-            return QClass(int.from_bytes(self.qclass, "big"))
-        except ValueError:
-            logger.error(f"Unknown class type: {self.qclass}")
-            return None
-
-    def get_label_name(self) -> str:
-        labels = []
-        offset = 0
-
-        while True:
-            label_length = self.qname[offset]
-            if label_length == 0:
-                break
-
-            offset += 1
-            label = self.qname[offset : offset + label_length]
-            labels.append(label.decode())
-            offset += label_length
-
-        return ".".join(labels) + "."
-
     def to_bytes(self) -> bytes:
-        return self.qname + self.qtype + self.qclass
+        qname_bytes = (
+            b"".join(
+                len(label).to_bytes(1, "big") + label.encode()
+                for label in self.qname.rstrip(".").split(".")
+            )
+            + b"\x00"
+        )
+        qtype_bytes = self.qtype.value.to_bytes(2, "big")
+        qclass_bytes = self.qclass.value.to_bytes(2, "big")
+        return qname_bytes + qtype_bytes + qclass_bytes
+
+    def byte_length(self) -> int:
+        return len(self.to_bytes())

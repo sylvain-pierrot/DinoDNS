@@ -19,22 +19,28 @@ logger = logging.getLogger(__name__)
 @click.option(
     "--port", "-p", type=click.INT, default=53, help="Port to listen on (default: 53)"
 )
-@click.option("--no-debug", is_flag=True, default=False, help="Disable debug mode")
-def main(catalog_file: click.Path, host: str, port: int, no_debug: bool) -> None:
+@click.option("--debug", is_flag=True, default=False, help="Enable debug mode")
+def main(catalog_file: click.Path, host: str, port: int, debug: bool) -> None:
+    log_level = logging.DEBUG if debug else logging.INFO
+    log_format = (
+        "ts=%(asctime)s level=%(levelname)s %(message)s"
+        if not debug
+        else "ts=%(asctime)s level=%(levelname)s logger=%(name)s line=%(lineno)d %(message)s"
+    )
     logging.basicConfig(
         stream=sys.stdout,
-        level=logging.INFO if no_debug else logging.DEBUG,
-        format="[%(asctime)s] [%(levelname)s] %(name)s: %(message)s",
-        datefmt="%Y-%m-%d %H:%M:%S",
+        level=log_level,
+        format=log_format,
+        datefmt="%Y-%m-%dT%H:%M:%S",
     )
 
     try:
         catalog = Catalog.from_file(catalog_file)
-        logger.info(f"Catalog loaded: \n{catalog}")
+        logger.info(f'msg="Catalog loaded" kind=Catalog {catalog}')
         server = DinoDNS(host, port, catalog)
         server.start()
     except Exception as e:
-        logger.error(f"Invalid Dinofile format: {e}")
+        logger.error(f'msg="Invalid Dinofile format: {e}"')
         sys.exit(1)
 
 

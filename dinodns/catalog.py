@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from dinodns.core.question import DNSQuestion
 from dinodns.utils import convert_keys
-from typing import List, Union, Literal
+from typing import List, Optional, Union, Literal
 from click import Path
 import click
 import dacite
@@ -20,12 +20,6 @@ class ARecord:
     type: Literal["A"]
     host_address: str
 
-    def get_rdata(self) -> bytes:
-        parts = self.host_address.split(".")
-        if len(parts) != 4:
-            raise ValueError(f"Invalid IPv4 address: {self.host_address}")
-        return bytes(int(part) for part in parts)
-
 
 @dataclass
 class CNAMERecord:
@@ -35,21 +29,29 @@ class CNAMERecord:
     type: Literal["CNAME"]
     cname: str
 
-    def get_rdata(self) -> bytes:
-        return self.cname.encode("utf-8") + b"\x00"
+
+Record = Union[ARecord, CNAMERecord]
 
 
 @dataclass
 class Zone:
     origin: str
-    records: List[Union[ARecord, CNAMERecord]]
+    records: List[Record]
 
 
 @dataclass
 class Catalog:
     zones: List[Zone]
 
-    def __str__(self):
+    def __str__(self) -> str:
+        entries = []
+        for i, zone in enumerate(self.zones):
+            entries.append(
+                f"zone.{i}.origin={zone.origin} zone.{i}.records={len(zone.records)}"
+            )
+        return " ".join(entries)
+
+    def master_format(self) -> str:
         lines = []
         for zone in self.zones:
             lines.append(f"Zone: {zone.origin}")
@@ -76,13 +78,24 @@ class Catalog:
         )
         return catalog
 
-    def search(self, question: DNSQuestion) -> Union[ARecord, CNAMERecord]:
+    def try_lookup_record(
+        self, question: DNSQuestion
+    ) -> Optional[Union[ARecord, CNAMERecord]]:
+        qname = question.qname.rstrip(".")
+
         for zone in self.zones:
-            if question.get_label_name().endswith(zone.origin):
-                for record in zone.records:
-                    domaine_name = (
-                        zone.origin if record.domain_name == "@" else record.domain_name
-                    )
-                    if domaine_name == question.get_label_name():
-                        return record
-        raise ValueError(f"No record found for {question.qname}")
+            origin = zone.origin.lower().rstrip(".")
+
+            if not qname.endswith(origin):
+                continue
+
+            for record in zone.records:
+                record_name = (
+                    origin
+                    if record.domain_name == "@"
+                    else record.domain_name.lower().rstrip(".")
+                )
+                if record_name == qname:
+                    return record
+
+        return None
