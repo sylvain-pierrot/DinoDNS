@@ -9,7 +9,7 @@
     <img src="https://img.shields.io/badge/Made_with_%E2%9D%A4_by-Sylvain_Pierrot-blueviolet?style=flat-square" />
 </p>
 <p align="center">
-    <img width="400" src="./assets/dinosaurs-hadrosaurid.png" alt="Dinosaur mascot" />
+    <img width="500" src="./assets/dinosaurs-hadrosaurid.png" alt="Dinosaur mascot" />
 </p>
 
 ---

@@ -34,7 +34,7 @@ class DNSMessage:
             self.answers[i].to_logfmt(i) for i in range(self.header.ancount)
         )
 
-        return f"kind=DNSMessage {self.header} {questions} {answers}"
+        return f"{self.header} {questions} {answers}"
 
     @classmethod
     def from_bytes(cls, data: bytes) -> "DNSMessage":
@@ -53,13 +53,12 @@ class DNSMessage:
             answer = DNSAnswer.from_bytes(data[offset:])
             offset += answer.byte_length()
             answers.append(answer)
-        authorities = []
 
         return cls(
             header=header,
             questions=questions,
             answers=answers,
-            authorities=authorities,
+            authorities=[],
             additional=[],
         )
 

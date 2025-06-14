@@ -1,5 +1,6 @@
+from abc import ABC, abstractmethod
 from ipaddress import IPv4Address
-from typing import Optional, Union
+from typing import Optional, Type
 from dinodns.catalog import ARecord, Catalog
 from dinodns.core.question import DNSQuestion, QClass, QType
 from dataclasses import dataclass
@@ -9,17 +10,53 @@ import logging
 logger = logging.getLogger(__name__)
 
 
+class RData(ABC):
+    @classmethod
+    @abstractmethod
+    def from_bytes(cls, data: bytes) -> "RData":
+        raise NotImplementedError()
+
+    @abstractmethod
+    def to_bytes(self) -> bytes:
+        raise NotImplementedError()
+
+
 @dataclass
-class RDataA:
+class RDataA(RData):
     address: IPv4Address
 
+    @classmethod
+    def from_bytes(cls, data: bytes) -> "RDataA":
+        return cls(address=IPv4Address(data))
+
+    def to_bytes(self) -> bytes:
+        return self.address.packed
+
 
 @dataclass
-class RDataCNAME:
+class RDataCNAME(RData):
     cname: str
 
+    @classmethod
+    def from_bytes(cls, data: bytes) -> "RDataCNAME":
+        return cls(cname=decode_domain_name(data))
 
-RData = Union[RDataA, RDataCNAME]
+    def to_bytes(self) -> bytes:
+        return encode_domain_name(self.cname)
+
+
+class RDataFactory:
+    _registry: dict[QType, RData] = {
+        QType.A: RDataA,
+        QType.CNAME: RDataCNAME,
+    }
+
+    @staticmethod
+    def from_bytes(qtype: QType, data: bytes) -> RData:
+        cls = RDataFactory._registry.get(qtype)
+        if cls is None:
+            raise NotImplementedError(f"Unsupported QType: {qtype}")
+        return cls.from_bytes(data)
 
 
 @dataclass
@@ -74,21 +111,21 @@ class DNSAnswer:
         name = ".".join(labels) + "."
         offset += 1
 
-        type_ = QType(int.from_bytes(data[offset : offset + 2], "big"))
+        type = QType(int.from_bytes(data[offset : offset + 2], "big"))
         class_ = QClass(int.from_bytes(data[offset + 2 : offset + 4], "big"))
         ttl = int.from_bytes(data[offset + 4 : offset + 8], "big")
         rdlength = int.from_bytes(data[offset + 8 : offset + 10], "big")
         rdata_bytes = data[offset + 10 : offset + 10 + rdlength]
-        rdata = cls.parse_rdata(type_, rdata_bytes)
+        rdata = RDataFactory.from_bytes(type, rdata_bytes)
 
-        return cls(name=name, type=type_, class_=class_, ttl=ttl, rdata=rdata)
+        return cls(name=name, type=type, class_=class_, ttl=ttl, rdata=rdata)
 
     def to_bytes(self) -> bytes:
         name_bytes = encode_domain_name(self.name)
         type_bytes = self.type.value.to_bytes(2, "big")
         class_bytes = self.class_.value.to_bytes(2, "big")
         ttl_bytes = self.ttl.to_bytes(4, "big")
-        rdata_bytes = self.encode_rdata(self.rdata)
+        rdata_bytes = self.rdata.to_bytes()
         rdlength_bytes = len(rdata_bytes).to_bytes(2, "big")
 
         return (
@@ -102,24 +139,6 @@ class DNSAnswer:
 
     def byte_length(self) -> int:
         return len(self.to_bytes())
-
-    @staticmethod
-    def encode_rdata(rdata: RData) -> bytes:
-        if isinstance(rdata, RDataA):
-            return rdata.address.packed
-        elif isinstance(rdata, RDataCNAME):
-            return encode_domain_name(rdata.cname)
-        else:
-            raise ValueError(f"Unsupported rdata type: {type(rdata)}")
-
-    @staticmethod
-    def parse_rdata(type: QType, data: bytes) -> RData:
-        if type == QType.A:
-            return RDataA(address=IPv4Address(data))
-        elif type == QType.CNAME:
-            return RDataCNAME(cname=decode_domain_name(data))
-        else:
-            raise NotImplementedError(f"No parser for type {type}")
 
     @classmethod
     def try_answer(
