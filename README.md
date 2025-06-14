@@ -1,49 +1,89 @@
-# DinoDNS
+<h1 align="center">DinoDNS</h1>
 
-<div align="center">
-    <img src="./assets/dinosaurs-hadrosaurid.png" alt="dinosaurs-hadrosaurid" />
-</div>
-
-DinoDNS is a minimalist and fun DNS server for dinosaurs 🦕. It allows you to define your own DNS zones using TOML configuration file.
+<p align="center">
+    <em>Lightweight DNS Server. Built to Resolve, Ready to Forward.</em>
+    </br>
+    </br>
+    <img width="400" src="./assets/dinosaurs-hadrosaurid.png" alt="Dinosaur mascot" />
+</p>
 
 ---
 
-## Requirements
+<p align="center"><strong>Built with the tools and technologies:</strong></p>
+
+<p align="center">
+  <img src="https://img.shields.io/badge/-TOML-brown" />
+  <img src="https://img.shields.io/badge/-Python-3776AB?logo=python&logoColor=white" />
+<img src="https://img.shields.io/badge/Made_with_%E2%9D%A4_by-Sylvain_Pierrot-blueviolet?style=flat-square" />
+
+</p>
+
+---
+
+## Table of Contents
+
+- [Table of Contents](#table-of-contents)
+- [Overview](#overview)
+  - [Why DinoDNS?](#why-dinodns)
+- [Getting started](#getting-started)
+  - [Prerequisites](#prerequisites)
+  - [Installation](#installation)
+  - [Usage](#usage)
+  - [Testing](#testing)
+- [`Catalog.toml` Example](#catalogtoml-example)
+
+## Overview
+
+**DinoDNS** is a lightweight, developer-friendly DNS server designed for custom domain resolution, dynamic record handling, and log-friendly observability.
+
+### Why DinoDNS?
+
+DinoDNS was built to offer a DNS server that’s:
+
+- 🧩 **Configurable Zones**: Define DNS zones and records effortlessly using simple TOML files.
+- ⚙️ **DNS Message Handling**: Parse, serialize, and respond to DNS queries with full protocol compliance.
+- 📊 **Log-friendly**: Structured logs in `logfmt` format for easy integration with Promtail, Grafana, or any log pipeline.
+- 🧪 **Ideal for local labs & testing**: No system-level DNS config required; just run and resolve.
+
+---
+
+## Getting started
+
+### Prerequisites
+
+This project requires the following dependencies:
 
 - Python **≥ 3.13.3**
 - [`uv`](https://github.com/astral-sh/uv) (recommended) or classic `pip`
 
-## Getting started
-
 ### Installation
 
-Build the package as a wheel:
+Using [`uv`](https://github.com/astral-sh/uv):
 
 ```bash
 uv build --wheel
-```
-
-Install it locally:
-
-```bash
 uv pip install dist/dinodns-*.whl
 ```
 
-Then run the server:
+### Usage
+
+Run the project with:
+
+- After [Installation](#installation) section:
 
 ```bash
 dinodns Catalog.toml
 ```
 
-### Run in development mode
-
-To run the server directly from the source:
+- Or, using [`uv`](https://github.com/astral-sh/uv):
 
 ```bash
 uv run -m dinodns.main Catalog.toml
 ```
 
-You can then test with:
+### Testing
+
+Once DinoDNS is runnning, Run the following command:
 
 ```bash
 nslookup jurassic.org. 127.0.0.1

@@ -1,10 +1,9 @@
-from ipaddress import IPv4Address
 from socket import AF_INET, SOCK_DGRAM, socket
 from typing import List
-from dinodns.core.answer import DNSAnswer, RDataA, RDataCNAME
+from dinodns.core.answer import DNSAnswer
 from dinodns.core.header import OpCode, RCode
 from dinodns.core.message import DNSMessage
-from dinodns.catalog import ARecord, CNAMERecord, Catalog
+from dinodns.catalog import Catalog
 import logging
 
 logger = logging.getLogger(__name__)

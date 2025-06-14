@@ -1,6 +1,6 @@
 from ipaddress import IPv4Address
 from typing import Optional, Union
-from dinodns.catalog import ARecord, CNAMERecord, Catalog
+from dinodns.catalog import ARecord, Catalog
 from dinodns.core.question import DNSQuestion, QClass, QType
 from dataclasses import dataclass
 from dinodns.utils import decode_domain_name, encode_domain_name
