@@ -2,20 +2,14 @@
 
 <p align="center">
     <em>Lightweight DNS Server. Built to Resolve, Ready to Forward.</em>
-    </br>
-    </br>
-    <img width="400" src="./assets/dinosaurs-hadrosaurid.png" alt="Dinosaur mascot" />
 </p>
-
----
-
-<p align="center"><strong>Built with the tools and technologies:</strong></p>
-
 <p align="center">
-  <img src="https://img.shields.io/badge/-TOML-brown" />
-  <img src="https://img.shields.io/badge/-Python-3776AB?logo=python&logoColor=white" />
-<img src="https://img.shields.io/badge/Made_with_%E2%9D%A4_by-Sylvain_Pierrot-blueviolet?style=flat-square" />
-
+    <img src="https://img.shields.io/badge/-TOML-brown" />
+    <img src="https://img.shields.io/badge/-Python-3776AB?logo=python&logoColor=white" />
+    <img src="https://img.shields.io/badge/Made_with_%E2%9D%A4_by-Sylvain_Pierrot-blueviolet?style=flat-square" />
+</p>
+<p align="center">
+    <img width="400" src="./assets/dinosaurs-hadrosaurid.png" alt="Dinosaur mascot" />
 </p>
 
 ---
