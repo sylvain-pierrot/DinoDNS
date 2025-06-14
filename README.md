@@ -32,7 +32,7 @@ uv pip install dist/dinodns-*.whl
 Then run the server:
 
 ```bash
-dinodns Dinofile.toml
+dinodns Catalog.toml
 ```
 
 ### Run in development mode
@@ -40,7 +40,7 @@ dinodns Dinofile.toml
 To run the server directly from the source:
 
 ```bash
-uv run -m dinodns.main Dinofile.toml
+uv run -m dinodns.main Catalog.toml
 ```
 
 You can then test with:
@@ -51,21 +51,40 @@ nslookup jurassic.org. 127.0.0.1
 
 ---
 
-## Dinofile Example
+## `Catalog.toml` Example
 
 ```toml
 [[zones]]
-zone = "."
-forward = ["1.1.1.1"]
+origin = "jurassic.org."
+
+[[zones.records]]
+domain-name = "@"
+ttl = 3600
+class = "IN"
+type = "A"
+host-address = "192.168.1.1"
+
+[[zones.records]]
+domain-name = "@"
+ttl = 3600
+class = "IN"
+type = "CNAME"
+cname = "www.jurassic.org."
 
 [[zones]]
-zone = "jurassic.org"
-origin = "jurassic.org."
+origin = "cretaceous.org."
+
+[[zones.records]]
+domain-name = "@"
 ttl = 3600
-records = [
-  { name = "www", type = "A", value = "192.168.1.1" },
-  { name = "mail", type = "MX", value = "mail.jurassic.org." },
-  { name = "ftp", type = "CNAME", value = "www.jurassic.org." },
-  { name = "ns", type = "NS", value = "ns1.jurassic.org." }
-]
+class = "IN"
+type = "A"
+host-address = "127.0.0.1"
+
+[[zones.records]]
+domain-name = "@"
+ttl = 3600
+class = "IN"
+type = "CNAME"
+cname = "www.cretaceous.org."
 ```

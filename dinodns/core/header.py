@@ -1,4 +1,6 @@
 from dataclasses import dataclass
+from enum import Enum
+from typing import ClassVar
 from tabulate import tabulate
 from dinodns.utils import format_bits
 import logging
@@ -7,10 +9,16 @@ import logging
 logger = logging.getLogger(__name__)
 
 
+class OpCode(Enum):
+    QUERY = 0
+    IQUERY = 1
+    STATUS = 2
+
+
 @dataclass
 class Flags:
     qr: int
-    opcode: int
+    opcode: OpCode
     aa: int
     tc: int
     rd: int
@@ -22,7 +30,7 @@ class Flags:
         return tabulate(
             [
                 ["QR", self.qr, "Query/Response"],
-                ["OpCode", format_bits(self.opcode, 4), "Operation Code"],
+                ["OpCode", format_bits(self.opcode.value, 4), "Operation Code"],
                 ["AA", self.aa, "Authoritative Answer"],
                 ["TC", self.tc, "Truncated"],
                 ["RD", self.rd, "Recursion Desired"],
@@ -38,7 +46,7 @@ class Flags:
     def to_int(self) -> int:
         return (
             (self.qr & 0x1) << 15
-            | (self.opcode & 0xF) << 11
+            | (self.opcode.value & 0xF) << 11
             | (self.aa & 0x1) << 10
             | (self.tc & 0x1) << 9
             | (self.rd & 0x1) << 8
@@ -60,13 +68,20 @@ class DNSHeader:
     nscount: int
     arcount: int
 
+    HEADER_SIZE: ClassVar[int] = 12
+
     def __str__(self) -> str:
         return tabulate(
             [
                 ["ID", "", self.id.to_bytes(2, "big"), "Transaction ID"],
                 ["Flags", "", self.flags.to_int().to_bytes(2, "big"), ""],
                 ["", "QR", self.flags.qr, "Query/Response"],
-                ["", "OpCode", format_bits(self.flags.opcode, 4), "Operation Code"],
+                [
+                    "",
+                    "OpCode",
+                    format_bits(self.flags.opcode.value, 4),
+                    "Operation Code",
+                ],
                 ["", "AA", self.flags.aa, "Authoritative Answer"],
                 ["", "TC", self.flags.tc, "Truncated"],
                 ["", "RD", self.flags.rd, "Recursion Desired"],
@@ -85,15 +100,17 @@ class DNSHeader:
 
     @classmethod
     def from_bytes(cls, data: bytes) -> "DNSHeader":
-        if len(data) != 12:
-            raise ValueError("Expected exactly 12 bytes for DNS header")
+        if len(data) != cls.HEADER_SIZE:
+            raise ValueError(
+                f"Expected {cls.HEADER_SIZE} bytes for DNS header, got {len(data)}"
+            )
 
         flags = int.from_bytes(data[2:4], "big")
         return cls(
             id=int.from_bytes(data[0:2], "big"),
             flags=Flags(
                 qr=(flags >> 15) & 0x1,
-                opcode=(flags >> 11) & 0xF,
+                opcode=OpCode((flags >> 11) & 0xF),
                 aa=(flags >> 10) & 0x1,
                 tc=(flags >> 9) & 0x1,
                 rd=(flags >> 8) & 0x1,
