@@ -2,7 +2,13 @@ from ipaddress import IPv4Address
 from typing import Optional
 from dinodns.catalog import Catalog, ARecord
 from dinodns.core.question import DNSQuestion
-from dinodns.core.resource_record import DNSResourceRecord, RDataA, RDataCNAME
+from dinodns.core.resource_record import (
+    Class,
+    DNSResourceRecord,
+    RDataA,
+    RDataCNAME,
+    Type,
+)
 import logging
 
 logger = logging.getLogger(__name__)
@@ -22,10 +28,11 @@ def try_resolve_question(
     else:
         rdata = RDataCNAME(cname=record.cname)
 
+    logger.info("teeeesssstttt 1")
     return DNSResourceRecord(
         name=question.qname,
-        type=question.qtype,
-        class_=question.qclass,
+        type=Type(question.qtype.value),
+        class_=Class(question.qclass.value),
         ttl=record.ttl,
         rdata=rdata,
     )

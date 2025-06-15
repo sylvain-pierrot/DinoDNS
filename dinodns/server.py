@@ -1,7 +1,7 @@
 from socket import AF_INET, SOCK_DGRAM, socket
 from typing import List
 from dinodns.core.resource_record import DNSResourceRecord
-from dinodns.core.header import OpCode, RCode
+from dinodns.core.header import RCode
 from dinodns.core.message import DNSMessage
 from dinodns.catalog import Catalog
 import logging
@@ -42,32 +42,25 @@ class DinoDNS:
         return DNSMessage.from_bytes(data)
 
     def handle_query(self, query: DNSMessage) -> DNSMessage:
-        if query.header.flags.qr == 0:
-            query.header.flags.qr = 1
-            query.header.flags.ra = 0
+        if not query.is_query():
+            return query
 
-            if query.header.flags.tc:
-                logger.warning('msg="Truncated response not supported"')
-                query.header.flags.rcode = RCode.REFUSED
-                return query
+        query.promote_to_response(recursion_supported=False)
 
-            if query.header.flags.opcode == OpCode.QUERY:
-                answers: List[DNSResourceRecord] = []
+        rcode = query.check_unsupported_flags()
+        if rcode:
+            query.header.flags.rcode = rcode
+            return query
 
-                for _, question in enumerate(query.questions):
-                    answer = try_resolve_question(self.catalog, question)
-                    if answer:
-                        answers.append(answer)
+        answers: List[DNSResourceRecord] = []
+        for question in query.questions:
+            answer = try_resolve_question(self.catalog, question)
+            if answer:
+                answers.append(answer)
 
-                query.answers = answers
-                query.header.ancount = len(answers)
+        query.add_answers(answers)
 
-                query.header.flags.aa = 1
-                query.header.flags.rcode = RCode.NOERROR if answers else RCode.NXDOMAIN
-            else:
-                logger.warning(
-                    f'msg="Unsupported OpCode: {query.header.flags.opcode.name}"'
-                )
-                query.header.flags.rcode = RCode.NOTIMP
+        query.header.flags.aa = 1
+        query.header.flags.rcode = RCode.NOERROR if answers else RCode.NXDOMAIN
 
         return query

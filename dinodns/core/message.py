@@ -1,7 +1,7 @@
 from dataclasses import dataclass
-from typing import List
+from typing import List, Optional
 from dinodns.core.resource_record import DNSResourceRecord
-from dinodns.core.header import DNSHeader
+from dinodns.core.header import DNSHeader, OpCode, RCode
 from dinodns.core.question import DNSQuestion
 import logging
 
@@ -33,12 +33,12 @@ class DNSMessage:
 
         offset = 12
         header = DNSHeader.from_bytes(data[:offset])
-        questions = []
+        questions: List[DNSQuestion] = []
         for _ in range(header.qdcount):
             question = DNSQuestion.from_bytes(data[offset:])
             offset += question.byte_length()
             questions.append(question)
-        answers = []
+        answers: List[DNSResourceRecord] = []
         for _ in range(header.ancount):
             answer = DNSResourceRecord.from_bytes(data[offset:])
             offset += answer.byte_length()
@@ -59,3 +59,29 @@ class DNSMessage:
         for a in self.answers:
             data += a.to_bytes()
         return data
+
+    def is_query(self) -> bool:
+        return self.header.flags.qr == 0
+
+    def promote_to_response(self, recursion_supported: bool) -> None:
+        self.header.flags.qr = 1
+        self.header.flags.ra = int(recursion_supported)
+
+    def check_unsupported_flags(self) -> Optional[RCode]:
+        if self.header.flags.tc:
+            logger.warning('msg="Truncated flag set: not supported"')
+            return RCode.REFUSED
+
+        if self.header.flags.opcode != OpCode.QUERY:
+            logger.warning(f'msg="Unsupported OpCode: {self.header.flags.opcode.name}"')
+            return RCode.NOTIMP
+
+        if self.header.flags.z != 0:
+            logger.warning('msg="Z flag must be zero (reserved)"')
+            return RCode.FORMERR
+
+        return None
+
+    def add_answers(self, answers: list["DNSResourceRecord"]) -> None:
+        self.answers = answers
+        self.header.ancount = len(answers)

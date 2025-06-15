@@ -2,6 +2,7 @@ from abc import ABC, abstractmethod
 from enum import Enum
 from ipaddress import IPv4Address
 from dataclasses import dataclass
+from typing import List
 from dinodns.utils import decode_domain_name, encode_domain_name
 import logging
 
@@ -30,7 +31,7 @@ class Type(Enum):
     SRV = 33
 
     @classmethod
-    def _missing_(cls, value):
+    def _missing_(cls, value: object):
         obj = object.__new__(cls)
         obj._name_ = "UNKNOWN"
         obj._value_ = value
@@ -45,7 +46,7 @@ class Class(Enum):
     HS = 4  # Hesiod class (obsolete)
 
     @classmethod
-    def _missing_(cls, value):
+    def _missing_(cls, value: object):
         obj = object.__new__(cls)
         obj._name_ = "UNKNOWN"
         obj._value_ = value
@@ -88,7 +89,7 @@ class RDataCNAME(RData):
 
 
 class RDataFactory:
-    _registry: dict[Type, RData] = {
+    _registry: dict[Type, type[RData]] = {
         Type.A: RDataA,
         Type.CNAME: RDataCNAME,
     }
@@ -144,7 +145,7 @@ class DNSResourceRecord:
     @classmethod
     def from_bytes(cls, data: bytes) -> "DNSResourceRecord":
         offset = 0
-        labels = []
+        labels: List[str] = []
         while data[offset] != 0:
             length = data[offset]
             offset += 1

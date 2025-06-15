@@ -33,6 +33,8 @@
 
 **DinoDNS** is a lightweight, developer-friendly DNS server designed for custom domain resolution, dynamic record handling, and log-friendly observability.
 
+> Based on the specifications defined in [RFC 1035 – Domain Names: Implementation and Specification](https://www.rfc-editor.org/rfc/rfc1035).
+
 ### Why DinoDNS?
 
 DinoDNS was built to offer a DNS server that’s:

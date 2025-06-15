@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 from enum import Enum
 import logging
+from typing import List
 
 
 logger = logging.getLogger(__name__)
@@ -32,7 +33,7 @@ class QType(Enum):
     ANY = 255
 
     @classmethod
-    def _missing_(cls, value):
+    def _missing_(cls, value: object):
         obj = object.__new__(cls)
         obj._name_ = "UNKNOWN"
         obj._value_ = value
@@ -48,7 +49,7 @@ class QClass(Enum):
     ANY = 255
 
     @classmethod
-    def _missing_(cls, value):
+    def _missing_(cls, value: object):
         obj = object.__new__(cls)
         obj._name_ = "UNKNOWN"
         obj._value_ = value
@@ -74,7 +75,7 @@ class DNSQuestion:
     @classmethod
     def from_bytes(cls, data: bytes) -> "DNSQuestion":
         offset = 0
-        labels = []
+        labels: List[str] = []
         while data[offset] != 0:
             length = data[offset]
             offset += 1
@@ -100,3 +101,4 @@ class DNSQuestion:
 
     def byte_length(self) -> int:
         return len(self.to_bytes())
+    

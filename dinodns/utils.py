@@ -1,16 +1,26 @@
+from typing import Any
+
+
 def format_bits(n: int, width: int) -> str:
     return "0b" + bin(n)[2:].zfill(width)
 
 
+KEY_REPLACEMENTS = {
+    "domain-name": "domain_name",
+    "host-address": "host_address",
+    "class": "class_",
+}
+
+
 def to_python_key(key: str) -> str:
-    return key.replace("-", "_").replace("class", "class_")
+    return KEY_REPLACEMENTS.get(key, key)
 
 
-def convert_keys(obj):
+def convert_keys(obj: Any) -> Any:
     if isinstance(obj, dict):
-        return {to_python_key(k): convert_keys(v) for k, v in obj.items()}
+        return {to_python_key(str(k)): convert_keys(v) for k, v in obj.items()}  # type: ignore
     elif isinstance(obj, list):
-        return [convert_keys(i) for i in obj]
+        return [convert_keys(i) for i in obj]  # type: ignore
     else:
         return obj
 
@@ -24,7 +34,7 @@ def encode_domain_name(domain: str) -> bytes:
 
 
 def decode_domain_name(data: bytes) -> str:
-    labels = []
+    labels: list[str] = []
     offset = 0
     while data[offset] != 0:
         length = data[offset]

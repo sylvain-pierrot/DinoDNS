@@ -44,7 +44,7 @@ class Catalog:
     zones: List[Zone]
 
     def __str__(self) -> str:
-        entries = []
+        entries: List[str] = []
         for i, zone in enumerate(self.zones):
             entries.append(
                 f"zone.{i}.origin={zone.origin} zone.{i}.records={len(zone.records)}"
@@ -52,7 +52,7 @@ class Catalog:
         return " ".join(entries)
 
     def master_format(self) -> str:
-        lines = []
+        lines: List[str] = []
         for zone in self.zones:
             lines.append(f"Zone: {zone.origin}")
             for record in zone.records:
@@ -67,7 +67,9 @@ class Catalog:
 
     @classmethod
     def from_file(cls, file_path: Path) -> "Catalog":
-        content = tomllib.load(click.open_file(click.format_filename(file_path), "rb"))
+        content = tomllib.load(
+            click.open_file(click.format_filename(str(file_path)), "rb")
+        )
         converted = convert_keys(content)
         catalog = dacite.from_dict(
             data_class=Catalog,
