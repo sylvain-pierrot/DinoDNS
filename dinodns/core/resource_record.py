@@ -88,10 +88,23 @@ class RDataCNAME(RData):
         return encode_domain_name(self.cname)
 
 
+@dataclass
+class RDataNS(RData):
+    nsdname: str
+
+    @classmethod
+    def from_bytes(cls, data: bytes) -> "RDataNS":
+        return cls(nsdname=decode_domain_name(data))
+
+    def to_bytes(self) -> bytes:
+        return encode_domain_name(self.nsdname)
+
+
 class RDataFactory:
     _registry: dict[Type, type[RData]] = {
         Type.A: RDataA,
         Type.CNAME: RDataCNAME,
+        Type.NS: RDataNS,
     }
 
     @staticmethod

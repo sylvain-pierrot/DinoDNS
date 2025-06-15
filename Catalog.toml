@@ -5,6 +5,20 @@ origin = "jurassic.org."
 domain-name = "@"
 ttl = 3600
 class = "IN"
+type = "NS"
+nsdname = "ns1.jurassic.org."
+
+[[zones.records]]
+domain-name = "ns1"
+ttl = 3600
+class = "IN"
+type = "A"
+host-address = "192.168.1.1"
+
+[[zones.records]]
+domain-name = "@"
+ttl = 3600
+class = "IN"
 type = "A"
 host-address = "192.168.1.1"
 
@@ -20,6 +34,20 @@ origin = "cretaceous.org."
 
 [[zones.records]]
 domain-name = "@"
+ttl = 3600
+class = "IN"
+type = "NS"
+nsdname = "ns1.cretaceous.org."
+
+[[zones.records]]
+domain-name = "@"
+ttl = 3600
+class = "IN"
+type = "A"
+host-address = "127.0.0.1"
+
+[[zones.records]]
+domain-name = "ns1"
 ttl = 3600
 class = "IN"
 type = "A"

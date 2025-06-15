@@ -30,7 +30,16 @@ class CNAMERecord:
     cname: str
 
 
-Record = Union[ARecord, CNAMERecord]
+@dataclass
+class NSRecord:
+    domain_name: str
+    ttl: int
+    class_: Literal["IN"]
+    type: Literal["NS"]
+    nsdname: str
+
+
+Record = Union[ARecord, CNAMERecord, NSRecord]
 
 
 @dataclass
@@ -80,25 +89,23 @@ class Catalog:
         )
         return catalog
 
-    def try_lookup_record(
-        self, question: DNSQuestion
-    ) -> Optional[Union[ARecord, CNAMERecord]]:
-        qname = question.qname.rstrip(".")
+    def try_lookup_record(self, question: DNSQuestion) -> Optional[Record]:
+        qname = question.qname.rstrip(".").lower()
 
         for zone in self.zones:
-            origin = zone.origin.lower().rstrip(".")
+            origin = zone.origin.rstrip(".").lower()
 
             if not qname.endswith(origin):
                 continue
 
             for record in zone.records:
-                record_name = (
-                    origin
-                    if record.domain_name == "@"
-                    else record.domain_name.lower().rstrip(".")
+                record_relative = record.domain_name.rstrip(".").lower()
+                record_fqdn = (
+                    origin if record_relative == "@" else f"{record_relative}.{origin}"
                 )
+
                 if (
-                    record_name == qname
+                    record_fqdn == qname
                     and question.qtype.name == record.type
                     and question.qclass.name == record.class_
                 ):

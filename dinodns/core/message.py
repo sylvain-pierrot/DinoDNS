@@ -54,9 +54,11 @@ class DNSMessage:
 
     def to_bytes(self) -> bytes:
         data = self.header.to_bytes()
-        for q in self.questions:
-            data += q.to_bytes()
-        for a in self.answers:
+        for question in self.questions:
+            data += question.to_bytes()
+        for answer in self.answers:
+            data += answer.to_bytes()
+        for a in self.additional:
             data += a.to_bytes()
         return data
 
@@ -67,7 +69,7 @@ class DNSMessage:
         self.header.flags.qr = 1
         self.header.flags.ra = int(recursion_supported)
 
-    def check_unsupported_flags(self) -> Optional[RCode]:
+    def check_unsupported_features(self) -> Optional[RCode]:
         if self.header.flags.tc:
             logger.warning('msg="Truncated flag set: not supported"')
             return RCode.REFUSED
@@ -80,8 +82,18 @@ class DNSMessage:
             logger.warning('msg="Z flag must be zero (reserved)"')
             return RCode.FORMERR
 
+        if self.header.flags.qr == 0 and self.header.qdcount != 1:
+            logger.warning(
+                f'msg="Only one question supported (QDCOUNT={self.header.qdcount})"'
+            )
+            return RCode.NOTIMP
+
         return None
 
-    def add_answers(self, answers: list["DNSResourceRecord"]) -> None:
+    def set_answers(self, answers: list["DNSResourceRecord"]) -> None:
         self.answers = answers
         self.header.ancount = len(answers)
+
+    def set_additional(self, additional: list["DNSResourceRecord"]) -> None:
+        self.additional = additional
+        self.header.arcount = len(additional)

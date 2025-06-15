@@ -1,12 +1,9 @@
 from socket import AF_INET, SOCK_DGRAM, socket
-from typing import List
-from dinodns.core.resource_record import DNSResourceRecord
-from dinodns.core.header import RCode
 from dinodns.core.message import DNSMessage
 from dinodns.catalog import Catalog
+from dinodns.resolver import try_resolve_query
 import logging
 
-from dinodns.resolver import try_resolve_question
 
 logger = logging.getLogger(__name__)
 
@@ -47,20 +44,11 @@ class DinoDNS:
 
         query.promote_to_response(recursion_supported=False)
 
-        rcode = query.check_unsupported_flags()
+        rcode = query.check_unsupported_features()
         if rcode:
             query.header.flags.rcode = rcode
             return query
 
-        answers: List[DNSResourceRecord] = []
-        for question in query.questions:
-            answer = try_resolve_question(self.catalog, question)
-            if answer:
-                answers.append(answer)
-
-        query.add_answers(answers)
-
-        query.header.flags.aa = 1
-        query.header.flags.rcode = RCode.NOERROR if answers else RCode.NXDOMAIN
+        try_resolve_query(self.catalog, query)
 
         return query
