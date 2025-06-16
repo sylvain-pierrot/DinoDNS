@@ -5,6 +5,19 @@ origin = "jurassic.org."
 domain-name = "@"
 ttl = 3600
 class = "IN"
+type = "SOA"
+mname = "ns1.jurassic.org."
+rname = "admin@jurassic.org"
+serial = 2025061601
+refresh = 7200
+retry = 3600
+expire = 1209600
+minimum = 86400
+
+[[zones.records]]
+domain-name = "@"
+ttl = 3600
+class = "IN"
 type = "NS"
 nsdname = "ns1.jurassic.org."
 
@@ -31,6 +44,19 @@ cname = "www.jurassic.org."
 
 [[zones]]
 origin = "cretaceous.org."
+
+[[zones.records]]
+domain-name = "@"
+ttl = 3600
+class = "IN"
+type = "SOA"
+mname = "ns1.cretaceous.org."
+rname = "admin@cretaceous.org."
+serial = 2025061601
+refresh = 7200
+retry = 3600
+expire = 1209600
+minimum = 86400
 
 [[zones.records]]
 domain-name = "@"

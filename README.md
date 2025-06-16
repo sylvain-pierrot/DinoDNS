@@ -24,10 +24,14 @@
   - [Installation](#installation)
   - [Usage](#usage)
   - [Query Examples](#query-examples)
-    - [**A** Record Query:](#a-record-query)
-    - [**CNAME** Record Query:](#cname-record-query)
-    - [**NS** Record Query:](#ns-record-query)
-- [`Catalog.toml` Example](#catalogtoml-example)
+- [📘 DNS Catalog Schema (TOML)](#-dns-catalog-schema-toml)
+  - [Overall Structure](#overall-structure)
+    - [Supported Record Types](#supported-record-types)
+      - [SOA (Start of Authority)](#soa-start-of-authority)
+      - [NS (Name Server)](#ns-name-server)
+      - [A (Address)](#a-address)
+      - [CNAME (Canonical Name)](#cname-canonical-name)
+  - [Complete Example](#complete-example)
 
 ## Overview
 
@@ -84,7 +88,9 @@ uv run -m dinodns.main Catalog.toml
 
 You can interact with DinoDNS using _standard_ DNS tools like `nslookup`:
 
-#### **A** Record Query:
+<details>
+<summary><strong>A Record</strong></summary>
+<br>
 
 ```bash
 nslookup jurassic.org. 127.0.0.1
@@ -100,7 +106,11 @@ Name:   jurassic.org
 Address: 192.168.1.1
 ```
 
-#### **CNAME** Record Query:
+</details>
+
+<details>
+<summary><strong>CNAME Record</strong></summary>
+<br>
 
 ```bash
 nslookup -type=CNAME jurassic.org. 127.0.0.1
@@ -115,7 +125,11 @@ Address:        127.0.0.1#53
 jurassic.org    canonical name = www.jurassic.org.
 ```
 
-#### **NS** Record Query:
+</details>
+
+<details>
+<summary><strong>NS Record</strong></summary>
+<br>
 
 ```bash
 dig NS jurassic.org. @127.0.0.1 +noadflag
@@ -150,13 +164,116 @@ jurassic.org.           3600    IN      A       192.168.1.1
 ;; MSG SIZE  rcvd: 100
 ```
 
+</details>
+
+<details>
+<summary><strong>SOA Record</strong></summary>
+<br>
+
+```bash
+nslookup -type=SOA jurassic.org. 127.0.0.1
+```
+
+Output:
+
+```
+Server:         127.0.0.1
+Address:        127.0.0.1#53
+
+\@
+        origin = ns1.jurassic.org
+        mail addr = admin.jurassic\.org
+        serial = 2025061601
+        refresh = 7200
+        retry = 3600
+        expire = 1209600
+        minimum = 86400
+```
+
+</details>
+
 ---
 
-## `Catalog.toml` Example
+## 📘 DNS Catalog Schema (TOML)
+
+This TOML schema defines a **DNS catalog**, composed of multiple **zones**. Each zone contains a list of DNS records (`SOA`, `NS`, `A`, `CNAME`, etc.).
+
+### Overall Structure
+
+```toml
+[[zones]]
+origin = "<zone name, e.g. jurassic.org.>"
+
+[[zones.records]]
+domain-name = "<relative or absolute name, e.g. @ or ns1>"
+ttl = <time-to-live in seconds, e.g. 3600>
+class = "IN"
+type = "<record type, e.g. A, NS, SOA, etc.>"
+# ...additional fields depending on the record type
+```
+
+#### Supported Record Types
+
+##### SOA (Start of Authority)
+
+Defines authoritative information about the zone.
+
+```toml
+type = "SOA"
+mname   = "<primary master name server>"
+rname   = "<responsible email>"
+serial  = <serial number, e.g. 2025061601>
+refresh = <refresh interval (seconds)>
+retry   = <retry interval>
+expire  = <expire time>
+minimum = <minimum TTL>
+```
+
+##### NS (Name Server)
+
+Declares the name servers for the zone.
+
+```toml
+type = "NS"
+nsdname = "<authoritative name server FQDN>"
+```
+
+##### A (Address)
+
+Maps a domain name to an IPv4 address.
+
+```toml
+type = "A"
+host-address = "<IPv4 address, e.g. 192.168.1.1>"
+```
+
+##### CNAME (Canonical Name)
+
+Creates an alias for another domain name.
+
+```toml
+type = "CNAME"
+cname = "<canonical target domain name>"
+```
+
+### Complete Example
 
 ```toml
 [[zones]]
 origin = "jurassic.org."
+
+[[zones.records]]
+domain-name = "@"
+ttl = 3600
+class = "IN"
+type = "SOA"
+mname = "ns1.jurassic.org."
+rname = "admin@jurassic.org."
+serial = 2025061601
+refresh = 7200
+retry = 3600
+expire = 1209600
+minimum = 86400
 
 [[zones.records]]
 domain-name = "@"
@@ -188,6 +305,19 @@ cname = "www.jurassic.org."
 
 [[zones]]
 origin = "cretaceous.org."
+
+[[zones.records]]
+domain-name = "@"
+ttl = 3600
+class = "IN"
+type = "SOA"
+mname = "ns1.cretaceous.org."
+rname = "admin@cretaceous.org."
+serial = 2025061601
+refresh = 7200
+retry = 3600
+expire = 1209600
+minimum = 86400
 
 [[zones.records]]
 domain-name = "@"

@@ -14,10 +14,10 @@ logger = logging.getLogger(__name__)
 def try_glue_resource_record(
     catalog: Catalog, rr: DNSResourceRecord
 ) -> "Optional[DNSResourceRecord]":
-    if not rr.is_rdata_domain_name():
+    if not rr.requires_glue_record():
         return None
 
-    domain_name = rr.rdata.target_name
+    domain_name = rr.rdata.domain_name_target
     if not domain_name:
         return None
 

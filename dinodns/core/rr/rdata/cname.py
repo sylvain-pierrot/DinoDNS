@@ -11,12 +11,12 @@ class RDataCNAME(RData):
     cname: str
 
     @property
-    def target_name(self) -> str:
+    def domain_name_target(self) -> str:
         return self.cname
 
     @classmethod
     def from_bytes(cls, data: bytes) -> "RDataCNAME":
-        return cls(cname=decode_domain_name(data))
+        return cls(cname=decode_domain_name(data)[0])
 
     def to_bytes(self) -> bytes:
         return encode_domain_name(self.cname)
@@ -32,5 +32,5 @@ class RDataCNAME(RData):
         return cls(cname=record.cname)
 
     @classmethod
-    def is_rdata_domain_name(cls) -> bool:
+    def requires_glue_record(cls) -> bool:
         return True

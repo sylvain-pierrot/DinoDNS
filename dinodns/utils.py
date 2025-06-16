@@ -1,4 +1,4 @@
-from typing import Any
+from typing import Any, Tuple
 
 
 def format_bits(n: int, width: int) -> str:
@@ -33,7 +33,7 @@ def encode_domain_name(domain: str) -> bytes:
     )
 
 
-def decode_domain_name(data: bytes) -> str:
+def decode_domain_name(data: bytes) -> Tuple[str, int]:
     labels: list[str] = []
     offset = 0
     while data[offset] != 0:
@@ -41,4 +41,30 @@ def decode_domain_name(data: bytes) -> str:
         offset += 1
         labels.append(data[offset : offset + length].decode())
         offset += length
-    return ".".join(labels) + "."
+    offset += 1  # null terminator
+    result = ".".join(labels) + "."
+    return result, offset
+
+
+def encode_email(email: str) -> bytes:
+    if "@" not in email:
+        raise ValueError("Invalid email: missing '@'")
+
+    parts = email.rstrip(".").split("@")
+    return (
+        b"".join(len(label).to_bytes(1, "big") + label.encode() for label in parts)
+        + b"\x00"
+    )
+
+
+def decode_email(data: bytes) -> Tuple[str, int]:
+    labels: list[str] = []
+    offset = 0
+    while data[offset] != 0:
+        length = data[offset]
+        offset += 1
+        labels.append(data[offset : offset + length].decode())
+        offset += length
+    offset += 1  # null terminator
+    result = "@".join(labels)
+    return result, offset

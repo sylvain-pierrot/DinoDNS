@@ -88,5 +88,5 @@ class DNSResourceRecord:
     def byte_length(self) -> int:
         return len(self.to_bytes())
 
-    def is_rdata_domain_name(self) -> bool:
-        return self.rdata.is_rdata_domain_name()
+    def requires_glue_record(self) -> bool:
+        return self.rdata.requires_glue_record()

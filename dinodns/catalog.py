@@ -39,7 +39,22 @@ class NSRecord:
     nsdname: str
 
 
-Record = Union[ARecord, CNAMERecord, NSRecord]
+@dataclass
+class SOARecord:
+    domain_name: str
+    ttl: int
+    class_: Literal["IN"]
+    type: Literal["SOA"]
+    mname: str  # Primary master name server
+    rname: str  # Responsible person's email
+    serial: int
+    refresh: int
+    retry: int
+    expire: int
+    minimum: int
+
+
+Record = Union[ARecord, CNAMERecord, NSRecord, SOARecord]
 
 
 @dataclass

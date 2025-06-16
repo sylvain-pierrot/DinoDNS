@@ -11,12 +11,12 @@ class RDataNS(RData):
     nsdname: str
 
     @property
-    def target_name(self) -> str:
+    def domain_name_target(self) -> str:
         return self.nsdname
 
     @classmethod
     def from_bytes(cls, data: bytes) -> "RDataNS":
-        return cls(nsdname=decode_domain_name(data))
+        return cls(nsdname=decode_domain_name(data)[0])
 
     def to_bytes(self) -> bytes:
         return encode_domain_name(self.nsdname)
@@ -32,5 +32,5 @@ class RDataNS(RData):
         return cls(nsdname=record.nsdname)
 
     @classmethod
-    def is_rdata_domain_name(cls) -> bool:
+    def requires_glue_record(cls) -> bool:
         return True

@@ -6,7 +6,7 @@ from dinodns.core.rr.types import Type
 
 class RData(ABC):
     @property
-    def target_name(self) -> Optional[str]:
+    def domain_name_target(self) -> Optional[str]:
         return None
 
     @classmethod
@@ -29,7 +29,7 @@ class RData(ABC):
         raise NotImplementedError()
 
     @classmethod
-    def is_rdata_domain_name(cls) -> bool:
+    def requires_glue_record(cls) -> bool:
         return False
 
 
