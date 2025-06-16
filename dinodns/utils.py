@@ -1,4 +1,4 @@
-from typing import Any, Tuple
+from typing import Any, List, Tuple
 
 
 def format_bits(n: int, width: int) -> str:
@@ -33,17 +33,32 @@ def encode_domain_name(domain: str) -> bytes:
     )
 
 
-def decode_domain_name(data: bytes) -> Tuple[str, int]:
-    labels: list[str] = []
-    offset = 0
-    while data[offset] != 0:
+def decode_domain_name(data: bytes, offset: int = 0) -> Tuple[str, int]:
+    labels: List[str] = []
+    jumped = False
+    original_offset = offset
+
+    while True:
         length = data[offset]
+
+        if (length & 0xC0) == 0xC0:
+            pointer = ((length & 0x3F) << 8) | data[offset + 1]
+            if not jumped:
+                original_offset = offset + 2
+                jumped = True
+            offset = pointer
+            continue
+
+        if length == 0:
+            offset += 1
+            break
+
         offset += 1
         labels.append(data[offset : offset + length].decode())
         offset += length
-    offset += 1  # null terminator
-    result = ".".join(labels) + "."
-    return result, offset
+
+    domain_name = ".".join(labels) + "."
+    return domain_name, (original_offset if jumped else offset)
 
 
 def encode_email(email: str) -> bytes:

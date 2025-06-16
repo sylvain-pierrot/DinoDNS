@@ -26,35 +26,39 @@ def try_glue_resource_record(
         qtype=QType.A,
         qclass=QClass.IN,
     )
-    record = catalog.try_lookup_record(glue_question)
-    if record is None:
+
+    resolved = catalog.try_lookup_record(glue_question)
+    if not resolved:
         logger.warning(f'msg="No record found for {glue_question.qname}"')
         return None
 
-    return DNSResourceRecord.from_record(record)
+    record, origin = resolved
+    return DNSResourceRecord.from_record(record, origin)
 
 
-def try_resolve_query(catalog: Catalog, query: DNSMessage) -> None:
+def try_resolve_query(catalog: Catalog, query: DNSMessage) -> bool:
     question = query.questions[0]
 
-    if question.qclass != QClass.IN:
-        return None
+    resolved = catalog.try_lookup_record(question)
+    if not resolved:
+        logger.info(f'msg="No local record found for {question.qname}"')
+        return False
 
-    record = catalog.try_lookup_record(question)
-    if record is None:
-        logger.warning(f'msg="No record found for {question.qname}"')
-        return None
+    record, origin = resolved
 
     answers: List[DNSResourceRecord] = []
     additional: List[DNSResourceRecord] = []
 
-    rr = DNSResourceRecord.from_record(record)
+    rr = DNSResourceRecord.from_record(record, origin)
     answers.append(rr)
 
     glue_rr = try_glue_resource_record(catalog, rr)
     if glue_rr:
         additional.append(glue_rr)
 
-    query.header.flags.aa = 1
+    query.promote_to_response(recursion_supported=True)
+    query.header.flags.aa = 1  # Authoritative Answer
     query.set_answers(answers)
     query.set_additional(additional)
+
+    return True

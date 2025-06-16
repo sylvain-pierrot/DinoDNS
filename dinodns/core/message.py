@@ -27,39 +27,60 @@ class DNSMessage:
         return f"{self.header} {questions} {answers}"
 
     @classmethod
-    def from_bytes(cls, data: bytes) -> "DNSMessage":
+    def from_bytes(cls, data: bytes, offset: int) -> "DNSMessage":
         if len(data) > 512:
             raise ValueError("DNS message exceeds maximum length of 512 bytes")
 
-        offset = 12
-        header = DNSHeader.from_bytes(data[:offset])
+        header = DNSHeader.from_bytes(data, offset)
+        offset += header.byte_length()
+
         questions: List[DNSQuestion] = []
         for _ in range(header.qdcount):
-            question = DNSQuestion.from_bytes(data[offset:])
+            question = DNSQuestion.from_bytes(data, offset)
             offset += question.byte_length()
             questions.append(question)
+
         answers: List[DNSResourceRecord] = []
         for _ in range(header.ancount):
-            answer = DNSResourceRecord.from_bytes(data[offset:])
-            offset += answer.byte_length()
-            answers.append(answer)
+            rr = DNSResourceRecord.from_bytes(data, offset)
+            offset += rr.byte_length()
+            answers.append(rr)
+
+        authorities: List[DNSResourceRecord] = []
+        for _ in range(header.nscount):
+            rr = DNSResourceRecord.from_bytes(data, offset)
+            offset += rr.byte_length()
+            authorities.append(rr)
+
+        additional: List[DNSResourceRecord] = []
+        for _ in range(header.arcount):
+            rr = DNSResourceRecord.from_bytes(data, offset)
+            offset += rr.byte_length()
+            additional.append(rr)
 
         return cls(
             header=header,
             questions=questions,
             answers=answers,
-            authorities=[],
-            additional=[],
+            authorities=authorities,
+            additional=additional,
         )
 
     def to_bytes(self) -> bytes:
         data = self.header.to_bytes()
+
         for question in self.questions:
             data += question.to_bytes()
-        for answer in self.answers:
-            data += answer.to_bytes()
-        for a in self.additional:
-            data += a.to_bytes()
+
+        for i in range(self.header.ancount):
+            data += self.answers[i].to_bytes()
+
+        for i in range(self.header.nscount):
+            data += self.authorities[i].to_bytes()
+
+        for i in range(self.header.arcount):
+            data += self.additional[i].to_bytes()
+
         return data
 
     def is_query(self) -> bool:
@@ -70,9 +91,9 @@ class DNSMessage:
         self.header.flags.ra = int(recursion_supported)
 
     def set_answers(self, answers: list["DNSResourceRecord"]) -> None:
-        self.answers = answers
-        self.header.ancount = len(answers)
+        self.answers.extend(answers)
+        self.header.ancount += len(answers)
 
     def set_additional(self, additional: list["DNSResourceRecord"]) -> None:
-        self.additional = additional
-        self.header.arcount = len(additional)
+        self.additional.extend(additional)
+        self.header.arcount += len(additional)

@@ -1,10 +1,9 @@
 from dataclasses import dataclass
-from typing import List
 from dinodns.catalog import Record
 from dinodns.core.rr.classes import Class
 from dinodns.core.rr.rdata.base import RData, RDataFactory
 from dinodns.core.rr.types import Type
-from dinodns.utils import encode_domain_name
+from dinodns.utils import decode_domain_name, encode_domain_name
 import logging
 
 logger = logging.getLogger(__name__)
@@ -37,20 +36,13 @@ class DNSResourceRecord:
         )
 
     @classmethod
-    def from_bytes(cls, data: bytes) -> "DNSResourceRecord":
-        offset = 0
-        labels: List[str] = []
-        while data[offset] != 0:
-            length = data[offset]
-            offset += 1
-            labels.append(data[offset : offset + length].decode())
-            offset += length
-        name = ".".join(labels) + "."
-        offset += 1
+    def from_bytes(cls, data: bytes, offset: int) -> "DNSResourceRecord":
+        name, offset = decode_domain_name(data, offset)
 
         type = Type(int.from_bytes(data[offset : offset + 2], "big"))
         class_ = Class(int.from_bytes(data[offset + 2 : offset + 4], "big"))
         ttl = int.from_bytes(data[offset + 4 : offset + 8], "big")
+
         rdlength = int.from_bytes(data[offset + 8 : offset + 10], "big")
         rdata_bytes = data[offset + 10 : offset + 10 + rdlength]
         rdata = RDataFactory.from_bytes(type, rdata_bytes)
@@ -58,10 +50,13 @@ class DNSResourceRecord:
         return cls(name=name, type=type, class_=class_, ttl=ttl, rdata=rdata)
 
     @classmethod
-    def from_record(cls, record: Record) -> "DNSResourceRecord":
+    def from_record(cls, record: Record, origin: str) -> "DNSResourceRecord":
+        fqdn = (
+            origin if record.domain_name == "@" else f"{record.domain_name}.{origin}"
+        ).rstrip(".") + "."
         rdata = RDataFactory.from_record(record)
         return cls(
-            name=record.domain_name,
+            name=fqdn,
             type=Type[record.type],
             class_=Class[record.class_],
             ttl=record.ttl,

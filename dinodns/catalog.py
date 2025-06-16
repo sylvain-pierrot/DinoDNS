@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from dinodns.core.question import DNSQuestion
 from dinodns.utils import convert_keys
-from typing import List, Optional, Union, Literal
+from typing import List, Optional, Tuple, Union, Literal
 from click import Path
 import click
 import dacite
@@ -104,7 +104,7 @@ class Catalog:
         )
         return catalog
 
-    def try_lookup_record(self, question: DNSQuestion) -> Optional[Record]:
+    def try_lookup_record(self, question: DNSQuestion) -> Optional[Tuple[Record, str]]:
         qname = question.qname.rstrip(".").lower()
 
         for zone in self.zones:
@@ -124,6 +124,6 @@ class Catalog:
                     and question.qtype.name == record.type
                     and question.qclass.name == record.class_
                 ):
-                    return record
+                    return record, zone.origin
 
         return None

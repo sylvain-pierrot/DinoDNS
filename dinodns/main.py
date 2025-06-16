@@ -1,3 +1,5 @@
+from ipaddress import IPv4Address
+from typing import List
 from dinodns.server import DinoDNS
 from dinodns.catalog import Catalog
 import click
@@ -12,15 +14,28 @@ logger = logging.getLogger(__name__)
 @click.option(
     "--host",
     "-h",
-    type=click.STRING,
-    default="0.0.0.0",
+    type=IPv4Address,
+    default=IPv4Address("0.0.0.0"),
     help="Host to listen on (default: 0.0.0.0)",
 )
 @click.option(
     "--port", "-p", type=click.INT, default=53, help="Port to listen on (default: 53)"
 )
+@click.option(
+    "--forward",
+    "upstreams",
+    multiple=True,
+    type=IPv4Address,
+    help="Upstream DNS servers to forward unresolved queries to (e.g., --forward 8.8.8.8 --forward 1.1.1.1)",
+)
 @click.option("--debug", is_flag=True, default=False, help="Enable debug mode")
-def main(catalog_file: click.Path, host: str, port: int, debug: bool) -> None:
+def main(
+    catalog_file: click.Path,
+    host: IPv4Address,
+    port: int,
+    upstreams: List[IPv4Address],
+    debug: bool,
+) -> None:
     log_level = logging.DEBUG if debug else logging.INFO
     log_format = (
         "ts=%(asctime)s level=%(levelname)s %(message)s"
@@ -36,8 +51,10 @@ def main(catalog_file: click.Path, host: str, port: int, debug: bool) -> None:
 
     try:
         catalog = Catalog.from_file(catalog_file)
-        logger.info(f'msg="Catalog loaded" kind=Catalog {catalog}')
-        server = DinoDNS(host, port, catalog)
+        origins = [zone.origin for zone in catalog.zones]
+        logger.info(f'msg="Catalog loaded" zones={origins}')
+
+        server = DinoDNS(host, port, catalog, upstreams)
         server.start()
     except Exception as e:
         logger.error(f'msg="Invalid Dinofile format: {e}"')

@@ -75,13 +75,13 @@ Run the project with:
 - After [Installation](#installation) section:
 
 ```bash
-dinodns Catalog.toml
+dinodns --forward 1.1.1.1 Catalog.toml
 ```
 
 - Or, using [`uv`](https://github.com/astral-sh/uv):
 
 ```bash
-uv run -m dinodns.main Catalog.toml
+uv run -m dinodns.main --forward 1.1.1.1 Catalog.toml
 ```
 
 ### Query Examples

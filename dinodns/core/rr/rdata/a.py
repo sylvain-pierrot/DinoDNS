@@ -12,6 +12,8 @@ class RDataA(RData):
 
     @classmethod
     def from_bytes(cls, data: bytes) -> "RDataA":
+        if len(data) != 4:
+            raise ValueError(f"Invalid IPv4 address length: {len(data)} bytes")
         return cls(address=IPv4Address(data))
 
     def to_bytes(self) -> bytes:

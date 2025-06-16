@@ -73,8 +73,7 @@ class DNSQuestion:
         )
 
     @classmethod
-    def from_bytes(cls, data: bytes) -> "DNSQuestion":
-        offset = 0
+    def from_bytes(cls, data: bytes, offset: int) -> "DNSQuestion":
         labels: List[str] = []
         while data[offset] != 0:
             length = data[offset]

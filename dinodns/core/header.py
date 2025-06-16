@@ -134,15 +134,10 @@ class DNSHeader:
         )
 
     @classmethod
-    def from_bytes(cls, data: bytes) -> "DNSHeader":
-        if len(data) != cls.HEADER_SIZE:
-            raise ValueError(
-                f"Expected {cls.HEADER_SIZE} bytes for DNS header, got {len(data)}"
-            )
-
-        flags = int.from_bytes(data[2:4], "big")
+    def from_bytes(cls, data: bytes, offset: int) -> "DNSHeader":
+        flags = int.from_bytes(data[offset + 2 : 4], "big")
         return cls(
-            id=int.from_bytes(data[0:2], "big"),
+            id=int.from_bytes(data[offset:2], "big"),
             flags=Flags(
                 qr=(flags >> 15) & 0x1,
                 opcode=OpCode((flags >> 11) & 0xF),
@@ -153,10 +148,10 @@ class DNSHeader:
                 z=(flags >> 4) & 0x7,
                 rcode=RCode(flags & 0xF),
             ),
-            qdcount=int.from_bytes(data[4:6], "big"),
-            ancount=int.from_bytes(data[6:8], "big"),
-            nscount=int.from_bytes(data[8:10], "big"),
-            arcount=int.from_bytes(data[10:12], "big"),
+            qdcount=int.from_bytes(data[offset + 4 : 6], "big"),
+            ancount=int.from_bytes(data[offset + 6 : 8], "big"),
+            nscount=int.from_bytes(data[offset + 8 : 10], "big"),
+            arcount=int.from_bytes(data[offset + 10 : 12], "big"),
         )
 
     def to_bytes(self) -> bytes:
@@ -168,3 +163,6 @@ class DNSHeader:
             + self.nscount.to_bytes(2, "big")
             + self.arcount.to_bytes(2, "big")
         )
+
+    def byte_length(self) -> int:
+        return len(self.to_bytes())
