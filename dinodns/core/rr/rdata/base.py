@@ -1,10 +1,14 @@
 from abc import ABC, abstractmethod
-from typing import Dict, List
+from typing import Dict, List, Optional
 from dinodns.catalog import Record
 from dinodns.core.rr.types import Type
 
 
 class RData(ABC):
+    @property
+    def target_name(self) -> Optional[str]:
+        return None
+
     @classmethod
     @abstractmethod
     def from_bytes(cls, data: bytes) -> "RData":
@@ -23,6 +27,10 @@ class RData(ABC):
     @abstractmethod
     def from_record(cls, record: Record) -> "RData":
         raise NotImplementedError()
+
+    @classmethod
+    def is_rdata_domain_name(cls) -> bool:
+        return False
 
 
 _registry: dict[Type, type[RData]] = {}

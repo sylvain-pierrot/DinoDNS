@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 from typing import List
+from dinodns.catalog import Record
 from dinodns.core.rr.classes import Class
 from dinodns.core.rr.rdata.base import RData, RDataFactory
 from dinodns.core.rr.types import Type
@@ -56,6 +57,17 @@ class DNSResourceRecord:
 
         return cls(name=name, type=type, class_=class_, ttl=ttl, rdata=rdata)
 
+    @classmethod
+    def from_record(cls, record: Record) -> "DNSResourceRecord":
+        rdata = RDataFactory.from_record(record)
+        return cls(
+            name=record.domain_name,
+            type=Type[record.type],
+            class_=Class[record.class_],
+            ttl=record.ttl,
+            rdata=rdata,
+        )
+
     def to_bytes(self) -> bytes:
         name_bytes = encode_domain_name(self.name)
         type_bytes = self.type.value.to_bytes(2, "big")
@@ -75,3 +87,6 @@ class DNSResourceRecord:
 
     def byte_length(self) -> int:
         return len(self.to_bytes())
+
+    def is_rdata_domain_name(self) -> bool:
+        return self.rdata.is_rdata_domain_name()

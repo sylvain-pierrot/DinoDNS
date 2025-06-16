@@ -1,4 +1,6 @@
 from socket import AF_INET, SOCK_DGRAM, socket
+from typing import Optional
+from dinodns.core.header import OpCode, RCode
 from dinodns.core.message import DNSMessage
 from dinodns.catalog import Catalog
 from dinodns.resolver import try_resolve_query
@@ -39,16 +41,39 @@ class DinoDNS:
         return DNSMessage.from_bytes(data)
 
     def handle_query(self, query: DNSMessage) -> DNSMessage:
-        if not query.is_query():
-            return query
-
-        query.promote_to_response(recursion_supported=False)
-
-        rcode = query.check_unsupported_features()
+        rcode = DinoDNS.check_unsupported_features(query)
         if rcode:
             query.header.flags.rcode = rcode
             return query
 
+        if not query.is_query():
+            return query
+
+        query.promote_to_response(recursion_supported=False)
         try_resolve_query(self.catalog, query)
 
         return query
+
+    @staticmethod
+    def check_unsupported_features(message: DNSMessage) -> Optional[RCode]:
+        if message.header.flags.tc:
+            logger.warning('msg="Truncated flag set: not supported"')
+            return RCode.REFUSED
+
+        if message.header.flags.opcode != OpCode.QUERY:
+            logger.warning(
+                f'msg="Unsupported OpCode: {message.header.flags.opcode.name}"'
+            )
+            return RCode.NOTIMP
+
+        if message.header.flags.z != 0:
+            logger.warning('msg="Z flag must be zero (reserved)"')
+            return RCode.FORMERR
+
+        if message.header.flags.qr == 0 and message.header.qdcount != 1:
+            logger.warning(
+                f'msg="Only one question supported (QDCOUNT={message.header.qdcount})"'
+            )
+            return RCode.NOTIMP
+
+        return None

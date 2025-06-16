@@ -10,6 +10,10 @@ from dinodns.utils import decode_domain_name, encode_domain_name
 class RDataCNAME(RData):
     cname: str
 
+    @property
+    def target_name(self) -> str:
+        return self.cname
+
     @classmethod
     def from_bytes(cls, data: bytes) -> "RDataCNAME":
         return cls(cname=decode_domain_name(data))
@@ -26,3 +30,7 @@ class RDataCNAME(RData):
         if not isinstance(record, CNAMERecord):
             raise TypeError(f"Expected CNAMERecord, got {type(record).__name__}")
         return cls(cname=record.cname)
+
+    @classmethod
+    def is_rdata_domain_name(cls) -> bool:
+        return True

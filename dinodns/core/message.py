@@ -1,7 +1,7 @@
 from dataclasses import dataclass
-from typing import List, Optional
+from typing import List
 from dinodns.core.rr.resource_record import DNSResourceRecord
-from dinodns.core.header import DNSHeader, OpCode, RCode
+from dinodns.core.header import DNSHeader
 from dinodns.core.question import DNSQuestion
 import logging
 
@@ -68,27 +68,6 @@ class DNSMessage:
     def promote_to_response(self, recursion_supported: bool) -> None:
         self.header.flags.qr = 1
         self.header.flags.ra = int(recursion_supported)
-
-    def check_unsupported_features(self) -> Optional[RCode]:
-        if self.header.flags.tc:
-            logger.warning('msg="Truncated flag set: not supported"')
-            return RCode.REFUSED
-
-        if self.header.flags.opcode != OpCode.QUERY:
-            logger.warning(f'msg="Unsupported OpCode: {self.header.flags.opcode.name}"')
-            return RCode.NOTIMP
-
-        if self.header.flags.z != 0:
-            logger.warning('msg="Z flag must be zero (reserved)"')
-            return RCode.FORMERR
-
-        if self.header.flags.qr == 0 and self.header.qdcount != 1:
-            logger.warning(
-                f'msg="Only one question supported (QDCOUNT={self.header.qdcount})"'
-            )
-            return RCode.NOTIMP
-
-        return None
 
     def set_answers(self, answers: list["DNSResourceRecord"]) -> None:
         self.answers = answers
