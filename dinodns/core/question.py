@@ -101,4 +101,3 @@ class DNSQuestion:
 
     def byte_length(self) -> int:
         return len(self.to_bytes())
-    

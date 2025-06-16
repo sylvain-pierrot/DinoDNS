@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 from typing import List, Optional
-from dinodns.core.resource_record import DNSResourceRecord
+from dinodns.core.rr.resource_record import DNSResourceRecord
 from dinodns.core.header import DNSHeader, OpCode, RCode
 from dinodns.core.question import DNSQuestion
 import logging
