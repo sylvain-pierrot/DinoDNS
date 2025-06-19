@@ -15,6 +15,7 @@ class DNSResourceRecord:
     type: Type
     class_: Class
     ttl: int
+    rdlength: int
     rdata: RData
 
     def __str__(self) -> str:
@@ -47,7 +48,9 @@ class DNSResourceRecord:
         rdata_bytes = data[offset + 10 : offset + 10 + rdlength]
         rdata = RDataFactory.from_bytes(type, rdata_bytes)
 
-        return cls(name=name, type=type, class_=class_, ttl=ttl, rdata=rdata)
+        return cls(
+            name=name, type=type, class_=class_, ttl=ttl, rdlength=rdlength, rdata=rdata
+        )
 
     @classmethod
     def from_record(cls, record: Record, origin: str) -> "DNSResourceRecord":
@@ -60,6 +63,7 @@ class DNSResourceRecord:
             type=Type[record.type],
             class_=Class[record.class_],
             ttl=record.ttl,
+            rdlength=rdata.byte_length(),
             rdata=rdata,
         )
 
@@ -68,8 +72,8 @@ class DNSResourceRecord:
         type_bytes = self.type.value.to_bytes(2, "big")
         class_bytes = self.class_.value.to_bytes(2, "big")
         ttl_bytes = self.ttl.to_bytes(4, "big")
+        rdlength_bytes = self.rdlength.to_bytes(2, "big")
         rdata_bytes = self.rdata.to_bytes()
-        rdlength_bytes = len(rdata_bytes).to_bytes(2, "big")
 
         return (
             name_bytes

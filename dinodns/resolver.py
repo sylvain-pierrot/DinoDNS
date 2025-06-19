@@ -41,7 +41,6 @@ def try_resolve_query(catalog: Catalog, query: DNSMessage) -> bool:
 
     resolved = catalog.try_lookup_record(question)
     if not resolved:
-        logger.info(f'msg="No local record found for {question.qname}"')
         return False
 
     record, origin = resolved

@@ -1,11 +1,12 @@
 from ipaddress import IPv4Address
 from socket import AF_INET, SOCK_DGRAM, socket
-from typing import Optional
+from typing import Any, Optional
 from dinodns.core.header import OpCode, RCode
 from dinodns.core.message import DNSMessage
 from dinodns.catalog import Catalog
 from dinodns.core.question import QClass
 from dinodns.resolver import try_resolve_query
+import threading
 import logging
 
 
@@ -40,39 +41,45 @@ class DinoDNS:
         while True:
             try:
                 data, addr = self.socket.recvfrom(512)
-                query = self.decode_query(data)
-                response = self.handle_query(query)
-                self.socket.sendto(response.to_bytes(), addr)
+                threading.Thread(
+                    target=self.handle_client, args=(data, addr), daemon=True
+                ).start()
             except KeyboardInterrupt:
                 logger.info('msg="Shutting down"')
                 break
-            except Exception as e:
-                logger.error(f'msg="Error handling query: {e}"')
-                continue
+
+    def handle_client(self, data: bytes, addr: Any) -> None:
+        try:
+            query = self.decode_query(data)
+            response = self.handle_query(query)
+            self.socket.sendto(response, addr)
+        except Exception as e:
+            logger.error(f'msg="Error handling client query: {e}" addr={addr}"')
 
     def decode_query(self, data: bytes) -> DNSMessage:
         return DNSMessage.from_bytes(data, 0)
 
-    def handle_query(self, query: DNSMessage) -> DNSMessage:
-        rcode = DinoDNS.check_unsupported_features(query)
-        if rcode:
+    def handle_query(self, query: DNSMessage) -> bytes:
+        if rcode := self.check_unsupported_features(query):
             query.header.flags.rcode = rcode
-            return query
+            return query.to_bytes()
 
         if not query.is_query():
-            return query
+            return query.to_bytes()
 
+        return self.try_resolve_or_forward(query)
+
+    def try_resolve_or_forward(self, query: DNSMessage) -> bytes:
         resolved = try_resolve_query(self.catalog, query)
         if resolved:
-            logger.info(query)
-            return query
+            return query.to_bytes()
 
         forwarded = self.forward_query(query)
         if forwarded:
-            logger.info(query)
             return forwarded
 
-        return query
+        query.header.flags.rcode = RCode.SERVFAIL
+        return query.to_bytes()
 
     @staticmethod
     def check_unsupported_features(message: DNSMessage) -> Optional[RCode]:
@@ -103,18 +110,16 @@ class DinoDNS:
 
         return None
 
-    def forward_query(self, query: DNSMessage, port: int = 53) -> Optional[DNSMessage]:
-        raw_query = query.to_bytes()
+    def forward_query(self, query: DNSMessage, port: int = 53) -> Optional[bytes]:
         for upstream in self.upstreams:
             try:
                 with socket(AF_INET, SOCK_DGRAM) as s:
-                    s.settimeout(2)  # Sécurité pour ne pas bloquer
-                    s.sendto(raw_query, (str(upstream), port))
+                    s.settimeout(2)
+                    s.sendto(query.to_bytes(), (str(upstream), port))
                     response_data, _ = s.recvfrom(512)
-                    return DNSMessage.from_bytes(response_data, 0)
+                    return response_data
             except Exception as e:
                 logger.warning(
-                    f'msg="Forwarding failed" upstreams={self.upstreams} error="{e}"'
+                    f'msg="Forwarding failed" upstream={upstream} error="{e}"'
                 )
-                query.header.flags.rcode = RCode.SERVFAIL
         return None

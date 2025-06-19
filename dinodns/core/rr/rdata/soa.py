@@ -24,7 +24,8 @@ class RDataSOA(RData):
     @classmethod
     def from_bytes(cls, data: bytes) -> "RDataSOA":
         offset = 0
-        mname, mname_len = decode_domain_name(data[offset:])
+
+        mname, mname_len = decode_domain_name(data)
         offset += mname_len
         rname, rname_len = decode_email(data[offset:])
         offset += rname_len

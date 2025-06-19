@@ -32,6 +32,9 @@ class RData(ABC):
     def requires_glue_record(cls) -> bool:
         return False
 
+    def byte_length(self) -> int:
+        return len(self.to_bytes())
+
 
 _registry: dict[Type, type[RData]] = {}
 
@@ -43,15 +46,18 @@ def register_rdata(cls: type[RData]):
 
 class RDataFactory:
     @staticmethod
-    def from_bytes(qtype: Type, data: bytes) -> RData:
-        return _registry[qtype].from_bytes(data)
+    def from_bytes(type: Type, data: bytes) -> RData:
+        rdata_type = _registry.get(type)
+        if rdata_type is None:
+            raise NotImplementedError(f"Unsupported Type: {type.name} ({type.value})")
+        return rdata_type.from_bytes(data)
 
     @staticmethod
     def from_record(record: Record) -> RData:
         type = Type[record.type]
         cls = _registry.get(type)
         if not cls:
-            raise NotImplementedError(f"Unsupported RData type: {type}")
+            raise NotImplementedError(f"Unsupported Type: {type}")
         return cls.from_record(record)
 
     @staticmethod

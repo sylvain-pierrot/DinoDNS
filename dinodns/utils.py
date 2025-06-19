@@ -35,30 +35,50 @@ def encode_domain_name(domain: str) -> bytes:
 
 def decode_domain_name(data: bytes, offset: int = 0) -> Tuple[str, int]:
     labels: List[str] = []
+    initial_offset = offset
     jumped = False
-    original_offset = offset
+    visited_offsets = set()
 
     while True:
+        if offset >= len(data):
+            raise ValueError("decode_domain_name: offset beyond data length")
+
         length = data[offset]
 
+        # Compression: pointer (starts with 11)
         if (length & 0xC0) == 0xC0:
+            if offset + 1 >= len(data):
+                raise ValueError("decode_domain_name: pointer truncated")
+
             pointer = ((length & 0x3F) << 8) | data[offset + 1]
+
+            if pointer in visited_offsets:
+                raise ValueError("decode_domain_name: compression loop")
+
+            visited_offsets.add(pointer)
+
             if not jumped:
-                original_offset = offset + 2
+                initial_offset = offset + 2
                 jumped = True
+
             offset = pointer
             continue
 
+        # End of domain name
         if length == 0:
             offset += 1
             break
 
         offset += 1
-        labels.append(data[offset : offset + length].decode())
+        if offset + length > len(data):
+            raise ValueError("decode_domain_name: label length out of bounds")
+
+        label = data[offset : offset + length].decode("ascii")
+        labels.append(label)
         offset += length
 
     domain_name = ".".join(labels) + "."
-    return domain_name, (original_offset if jumped else offset)
+    return domain_name, (initial_offset if jumped else offset)
 
 
 def encode_email(email: str) -> bytes:
