@@ -64,8 +64,8 @@ This project requires the following dependencies:
 Using [`uv`](https://github.com/astral-sh/uv):
 
 ```bash
-uv build --wheel
-uv pip install dist/dinodns-*.whl
+uv build
+pipx install dist/dinodns-*.whl
 ```
 
 ### Usage
