@@ -30,15 +30,15 @@ class DinoDNS:
         self.cache = DNSCache(max_size=1000, enable_logging=True)
 
     def start(self) -> None:
-        logger.info(
-            f'msg="Starting DNS server" host="{str(self.host)}" port={self.port}'
-        )
-        logger.info(
-            f'msg="Using upstream forwarders" upstreams={[str(ip) for ip in self.upstreams]}'
-        )
-
         self.socket.bind((str(self.host), self.port))
         logger.info(f'msg="Server listening on {self.host}:{self.port}"')
+
+        logger.info(
+            f'msg="Starting DinoDNS server" host="{str(self.host)}" port={self.port}'
+        )
+        logger.info(
+            f'msg="Forwarding to upstream resolvers" upstreams={[str(ip) for ip in self.upstreams]}'
+        )
 
         while True:
             try:

@@ -57,7 +57,7 @@ def main(
         server = DinoDNS(host, port, catalog, upstreams)
         server.start()
     except Exception as e:
-        logger.error(f'msg="Invalid Dinofile format: {e}"')
+        logger.error(f'msg="DinoDNS Server failed" error="{e}"')
         sys.exit(1)
 
 
