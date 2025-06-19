@@ -27,6 +27,9 @@ class QType(Enum):
     TXT = 16
     AAAA = 28
     SRV = 33
+    NAPTR = 35
+    SVCB = 64
+    HTTPS = 65
     AXFR = 252
     MAILB = 253
     MAILA = 254

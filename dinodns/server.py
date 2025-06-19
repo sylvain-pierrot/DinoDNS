@@ -1,6 +1,7 @@
 from ipaddress import IPv4Address
 from socket import AF_INET, SOCK_DGRAM, socket
 from typing import Any, Optional
+from dinodns.cache import DNSCache
 from dinodns.core.header import OpCode, RCode
 from dinodns.core.message import DNSMessage
 from dinodns.catalog import Catalog
@@ -26,6 +27,7 @@ class DinoDNS:
         self.catalog = catalog
         self.socket = socket(AF_INET, SOCK_DGRAM)
         self.upstreams = upstreams
+        self.cache = DNSCache(max_size=1000, enable_logging=True)
 
     def start(self) -> None:
         logger.info(
@@ -111,15 +113,35 @@ class DinoDNS:
         return None
 
     def forward_query(self, query: DNSMessage, port: int = 53) -> Optional[bytes]:
+        raw_query: bytes = query.to_bytes()
+
         for upstream in self.upstreams:
+            q = query.questions[0]
+            key = (q.qname.rstrip(".").lower(), q.qtype.name, str(upstream))
+
+            cached = self.cache.get(key)
+            if cached:
+                logger.info(f'msg="Cache hit for {key}"')
+                response = bytearray(cached)
+                response[0:2] = query.to_bytes()[0:2]  # patch transaction ID
+                return bytes(response)
+
             try:
                 with socket(AF_INET, SOCK_DGRAM) as s:
                     s.settimeout(2)
-                    s.sendto(query.to_bytes(), (str(upstream), port))
+                    s.sendto(raw_query, (str(upstream), port))
                     response_data, _ = s.recvfrom(512)
+
+                    # TODO : to improve, extract the actual TTL from the DNS response
+                    ttl: int = 3600
+                    self.cache.set(key, response_data, ttl)
+
+                    logger.info(f'msg="Forwarded and cached for {key}"')
                     return response_data
+
             except Exception as e:
                 logger.warning(
-                    f'msg="Forwarding failed" upstream={upstream} error="{e}"'
+                    f'msg="Forwarding failed" upstream="{str(upstream)}" error="{e}"'
                 )
+
         return None

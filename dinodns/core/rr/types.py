@@ -21,6 +21,9 @@ class Type(Enum):
     TXT = 16
     AAAA = 28
     SRV = 33
+    NAPTR = 35
+    SVCB = 64
+    HTTPS = 65
 
     @classmethod
     def _missing_(cls, value: object):
