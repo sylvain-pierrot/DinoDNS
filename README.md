@@ -35,7 +35,7 @@
 
 ## Overview
 
-**DinoDNS** is a lightweight, developer-friendly DNS server designed for custom domain resolution, dynamic record handling, and log-friendly observability.
+**DinoDNS** is a lightweight, developer-friendly DNS server designed for custom domain resolution, dynamic record handling, smart query forwarding, and log-friendly observability.
 
 > Based on the specifications defined in [RFC 1035 – Domain Names: Implementation and Specification](https://www.rfc-editor.org/rfc/rfc1035).
 
@@ -43,8 +43,9 @@
 
 DinoDNS was built to offer a DNS server that’s:
 
-- 🧩 **Configurable Zones**: Define DNS zones and records effortlessly using simple TOML files.
-- ⚙️ **DNS Message Handling**: Parse, serialize, and respond to DNS queries with full protocol compliance.
+- 🧩 **Configurable Zones**: Define DNS zones and records using simple TOML files.
+- ⚙️ **DNS Message Handling**: Parse, serialize, and respond to DNS queries in full compliance with [RFC 1035](https://www.rfc-editor.org/rfc/rfc1035).
+- 🌐 **Smart Forwarding**: Forward unresolved queries to upstream resolvers of your choice, enabling DinoDNS to function as a recursive proxy when needed.
 - 📊 **Log-friendly**: Structured logs in `logfmt` format for easy integration with Promtail, Grafana, or any log pipeline.
 - 🧪 **Ideal for local labs & testing**: No system-level DNS config required; just run and resolve.
 
